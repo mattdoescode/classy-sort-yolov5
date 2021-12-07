@@ -137,3 +137,13 @@ dmypy.json
 
 #output folder
 inference/output/
+RAW-FOOTAGE/*
+wandb/*
+
+#interpreter  
+DUAL-CAMERA
+fish-project-interpreter 
+
+runs
+
+*.txt

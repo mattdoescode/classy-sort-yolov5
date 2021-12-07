@@ -26,7 +26,6 @@
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
     
@@ -47,6 +46,7 @@ from pathlib import Path
 import cv2
 import torch
 import torch.backends.cudnn as cudnn
+from datetime import datetime
 
 #yolov5
 from yolov5.utils.datasets import LoadImages, LoadStreams
@@ -93,17 +93,22 @@ def draw_boxes(img, bbox, identities=None, categories=None, names=None, offset=(
         # box text and bar
         cat = int(categories[i]) if categories is not None else 0
         
-        id = int(identities[i]) if identities is not None else 0
+        #id = int(identities[i]) if identities is not None else 0
+        id = 0
         
         color = compute_color_for_labels(id)
         
-        label = f'{names[cat]} | {id}'
-        t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 2, 2)[0]
+        label = f'{id} | {names[cat]}'
+        t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 1, 1)[0]
+        #Rect around detected object
         cv2.rectangle(img, (x1, y1), (x2, y2), color, 3)
+
+        #Rect background for text
         cv2.rectangle(
-            img, (x1, y1), (x1 + t_size[0] + 3, y1 + t_size[1] + 4), color, -1)
+            img, (x1, y1+(y2-y1)), (x1 + t_size[0] + 3, y1 + t_size[1] + 4 + (y2-y1)), color, -1)
+        #
         cv2.putText(img, label, (x1, y1 +
-                                 t_size[1] + 4), cv2.FONT_HERSHEY_PLAIN, 2, [255, 255, 255], 2)
+                                 t_size[1] + 4 + (y2-y1)), cv2.FONT_HERSHEY_PLAIN, 1, [255, 255, 255], 1)
     return img
 
 def detect(opt, *args):
@@ -154,6 +159,12 @@ def detect(opt, *args):
     save_path = str(Path(out))
     txt_path = str(Path(out))+'/results.txt'
     
+
+    ######
+        #PROCESSING EACH FRAME HERE
+    ####
+
+
     for frame_idx, (path, img, im0s, vid_cap) in enumerate(dataset): #for every frame
         img= torch.from_numpy(img).to(device)
         img = img.half() if half else img.float() #unint8 to fp16 or fp32
@@ -169,7 +180,7 @@ def detect(opt, *args):
         pred = non_max_suppression(
             pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
         t2 = time_synchronized()
-        
+
         # Process detections
         for i, det in enumerate(pred): #for each detection in this frame
             if webcam:  # batch_size >= 1
@@ -261,13 +272,13 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str,
-                        default='yolov5/weights/yolov5s.pt', help='model.pt path')
+                        default='C:\\Users\\matt2\\Desktop\\NON-mod-CLASSSY\\classy-sort-yolov5-main\\best.pt', help='model.pt path')
     # file/folder, 0 for webcam
     parser.add_argument('--source', type=str,
-                        default='inference/images', help='source')
-    parser.add_argument('--output', type=str, default='inference/output',
+                        default='C:\\Users\\matt2\\Desktop\\Fish videos - final cuts\\1 yellow zebra fish\\1-front-30-second-clip.mp4', help='source')
+    parser.add_argument('--output', type=str, default='inference/output'+str(datetime.today().replace(microsecond=0)).replace(":","_"),
                         help='output folder')  # output folder
-    parser.add_argument('--img-size', type=int, default=1080,
+    parser.add_argument('--img-size', type=int, default=640,
                         help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float,
                         default=0.3, help='object confidence threshold')
@@ -279,12 +290,12 @@ if __name__ == '__main__':
                         help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--view-img', action='store_true',
                         help='display results')
-    parser.add_argument('--save-img', action='store_true',
+    parser.add_argument('--save-img', action='store_true', default="True",
                         help='save video file to output folder (disable for speed)')
     parser.add_argument('--save-txt', action='store_true',
-                        help='save results to *.txt')
+                        help='save results to *.txt', default="True")
     parser.add_argument('--classes', nargs='+', type=int,
-                        default=[i for i in range(80)], help='filter by class') #80 classes in COCO dataset
+                        default=[i for i in range(1)], help='filter by class') #80 classes in COCO dataset
     parser.add_argument('--agnostic-nms', action='store_true',
                         help='class-agnostic NMS')
     parser.add_argument('--augment', action='store_true',
