@@ -57,10 +57,46 @@ from yolov5.utils.torch_utils import select_device, time_synchronized
 import skimage
 from sort import *
 
+#DB stuff
+import psycopg2
+from config import config
+
 torch.set_printoptions(precision=3)
 
-palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
+def connect(tableName):
+    """ Connect to the PostgreSQL database server """
+    conn = None
+    try:
+        # read connection parameters
+        params = config()
 
+        # connect to the PostgreSQL server
+        print('Connecting to the PostgreSQL database...')
+        conn = psycopg2.connect(**params)
+
+        # create a cursor
+        cur = conn.cursor()
+
+        #Create TABLE
+        createTable = """CREATE TABLE "{}" ( 
+            recordID BIGSERIAL PRIMARY KEY,
+            frame INTEGER NOT NULL,
+            bbox_x1 decimal	NOT NULL,
+            bbox_y1 decimal	NOT NULL,
+            bbox_x2 decimal	NOT NULL,
+            bbox_y2 decimal	NOT NULL,
+            category CHARACTER VARYING(50) NOT NULL, 
+            identity INTEGER NOT NULL
+        )""".format(str(tableName))
+
+        cur.execute(createTable)
+        print("Created new DB table", tableName)
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+    time.sleep(20)
+        
+
+palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
 
 def bbox_rel(*xyxy):
     """" Calculates the relative bounding box from absolute pixel values. """
@@ -157,15 +193,18 @@ def detect(opt, *args):
     
     save_path = str(Path(out))
     txt_path = str(Path(out))+'/results.txt'
+
+
+    print(out)
+    tableName = os.path.split(out)[1]
+    print(tableName)
+    connect(tableName)
     
 
     ######
         #PROCESSING EACH FRAME HERE
     ####
 
-
-    # frame_idx = 0;
-    # img = 
     imgRaw = ""
     for frame_idx, (path, img, im0s, vid_cap) in enumerate(dataset): #for every frame
         img= torch.from_numpy(img).to(device)
@@ -292,7 +331,7 @@ if __name__ == '__main__':
     parser.add_argument('--source', type=str,
                         default='0', help='source')
 
-    parser.add_argument('--output', type=str, default='inference/output'+str(datetime.today().replace(microsecond=0)).replace(":","_"),
+    parser.add_argument('--output', type=str, default='inference/output/'+str(datetime.today().replace(microsecond=0)).replace(":","_").replace(" ","_"),
                         help='output folder')  # output folder
     parser.add_argument('--img-size', type=int, default=640,
                         help='inference size (pixels)')

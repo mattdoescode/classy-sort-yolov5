@@ -145,5 +145,5 @@ DUAL-CAMERA
 fish-project-interpreter 
 
 runs
-
+*.ini
 *.txt
