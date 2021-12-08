@@ -166,15 +166,14 @@ def detect(opt, *args):
 
     # frame_idx = 0;
     # img = 
-
-
+    imgRaw = ""
     for frame_idx, (path, img, im0s, vid_cap) in enumerate(dataset): #for every frame
         img= torch.from_numpy(img).to(device)
         img = img.half() if half else img.float() #unint8 to fp16 or fp32
         img /= 255.0 #normalize to between 0 and 1.
         if img.ndimension()==3:
             img = img.unsqueeze(0)
-            
+
         # Inference
         t1 = time_synchronized()
         pred = model(img, augment=opt.augment)[0] 
@@ -184,6 +183,7 @@ def detect(opt, *args):
             pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
         t2 = time_synchronized()
 
+        imgRaw = im0s[0].copy()
         # Process detections
         for i, det in enumerate(pred): #for each detection in this frame
             if webcam:  # batch_size >= 1
@@ -215,7 +215,6 @@ def detect(opt, *args):
             tracked_dets = sort_tracker.update(dets_to_sort)
 
             print('Output from SORT:\n',tracked_dets,'\n')
-
             
             # draw boxes for visualization
             if len(tracked_dets)>0:
@@ -264,11 +263,13 @@ def detect(opt, *args):
                         fps = vid_cap.get(cv2.CAP_PROP_FPS)
                         w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                         h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                        print("fps is:", fps)
                         vid_writer = cv2.VideoWriter(
                             save_path+".avi", cv2.VideoWriter_fourcc(*opt.fourcc), fps, (w, h))
+                        vid_writer_RAW = cv2.VideoWriter(
+                            save_path+"RAW.avi", cv2.VideoWriter_fourcc(*opt.fourcc), fps, (w, h))
                         print("video writer started")
                     vid_writer.write(im0)
+                    vid_writer_RAW.write(imgRaw)
     if save_txt or save_img:
         print('Results saved to %s' % os.getcwd() + os.sep + out)
         if platform == 'darwin':  # MacOS
