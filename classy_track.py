@@ -73,6 +73,7 @@ def connect(tableName):
         # connect to the PostgreSQL server
         print('Connecting to the PostgreSQL database...')
         conn = psycopg2.connect(**params)
+        conn.autocommit = True
 
         # create a cursor
         cur = conn.cursor()
@@ -86,16 +87,32 @@ def connect(tableName):
             bbox_x2 decimal	NOT NULL,
             bbox_y2 decimal	NOT NULL,
             category CHARACTER VARYING(50) NOT NULL, 
-            identity INTEGER NOT NULL
+            identityNum INTEGER NOT NULL
         )""".format(str(tableName))
 
         cur.execute(createTable)
         print("Created new DB table", tableName)
+
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
-    time.sleep(20)
-        
+    return cur
+    
+def insertRecordDB(cur, tableName, data):
 
+    statement = """INSERT INTO "{}"
+    (frame, bbox_x1,
+            bbox_y1,
+            bbox_x2,
+            bbox_y2,
+            category,
+            identityNum
+    ) VALUES ({},{},{},{},{},{},{})
+    """.format(str(tableName), data[0], data[1], data[2], data[3], data[4], data[5], data[6] )
+
+    print(statement)
+
+    cur.execute(statement)
+    
 palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
 
 def bbox_rel(*xyxy):
@@ -194,11 +211,8 @@ def detect(opt, *args):
     save_path = str(Path(out))
     txt_path = str(Path(out))+'/results.txt'
 
-
-    print(out)
     tableName = os.path.split(out)[1]
-    print(tableName)
-    connect(tableName)
+    cur = connect(tableName)
     
 
     ######
@@ -278,6 +292,8 @@ def detect(opt, *args):
                     with open(txt_path, 'a') as f:
                         f.write(f'{frame_idx},{bbox_x1},{bbox_y1},{bbox_x2},{bbox_y2},{category},{u_overdot},{v_overdot},{s_overdot},{identity}\n')
                 
+                    insertRecordDB(cur,tableName, [frame_idx, bbox_x1,bbox_y1,bbox_x2,bbox_y2,category, identity])
+
             print(f'{s} Done. ({t2-t1})')    
             # Stream image results(opencv)
             if view_img:
