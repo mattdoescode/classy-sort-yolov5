@@ -93,8 +93,7 @@ def draw_boxes(img, bbox, identities=None, categories=None, names=None, offset=(
         # box text and bar
         cat = int(categories[i]) if categories is not None else 0
         
-        #id = int(identities[i]) if identities is not None else 0
-        id = 0
+        id = int(identities[i]) if identities is not None else 0
         
         color = compute_color_for_labels(id)
         
@@ -163,6 +162,10 @@ def detect(opt, *args):
     ######
         #PROCESSING EACH FRAME HERE
     ####
+
+
+    # frame_idx = 0;
+    # img = 
 
 
     for frame_idx, (path, img, im0s, vid_cap) in enumerate(dataset): #for every frame
@@ -241,15 +244,18 @@ def detect(opt, *args):
             # Stream image results(opencv)
             if view_img:
                 cv2.imshow(p,im0)
+            if view_img or save_img:
                 if cv2.waitKey(1)==ord('q'): #q to quit
                     raise StopIteration
             # Save video results
             if save_img:
-                print('saving img!')
                 if dataset.mode == 'images':
+                    print('saving img!')
                     cv2.imwrite(save_path, im0)
                 else:
                     print('saving video!')
+                    print("vid path is", vid_path)
+                    print("save_path is", save_path)
                     if vid_path != save_path:  # new video
                         vid_path = save_path
                         if isinstance(vid_writer, cv2.VideoWriter):
@@ -258,8 +264,10 @@ def detect(opt, *args):
                         fps = vid_cap.get(cv2.CAP_PROP_FPS)
                         w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                         h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                        print("fps is:", fps)
                         vid_writer = cv2.VideoWriter(
-                            save_path, cv2.VideoWriter_fourcc(*opt.fourcc), fps, (w, h))
+                            save_path+".avi", cv2.VideoWriter_fourcc(*opt.fourcc), fps, (w, h))
+                        print("video writer started")
                     vid_writer.write(im0)
     if save_txt or save_img:
         print('Results saved to %s' % os.getcwd() + os.sep + out)
@@ -274,8 +282,15 @@ if __name__ == '__main__':
     parser.add_argument('--weights', type=str,
                         default='C:\\Users\\matt2\\Desktop\\NON-mod-CLASSSY\\classy-sort-yolov5-main\\best.pt', help='model.pt path')
     # file/folder, 0 for webcam
+
+    # file_location = "C:\Users\matt2\Desktop\working-camera\RAW-FOOTAGE\2021-12-07 16-07-34\camera-one-at-2021-12-07 16-07-34.avi"
+    # file_location = file_location.replace('\\','/')
+
+    # parser.add_argument('--source', type=str,
+    #                     default='C:\\Users\\matt2\\Desktop\\working-camera\\RAW-FOOTAGE\\2021-12-07 16-33-49\\stills-camera-0', help='source')
     parser.add_argument('--source', type=str,
-                        default='C:\\Users\\matt2\\Desktop\\Fish videos - final cuts\\1 yellow zebra fish\\1-front-30-second-clip.mp4', help='source')
+                        default='0', help='source')
+
     parser.add_argument('--output', type=str, default='inference/output'+str(datetime.today().replace(microsecond=0)).replace(":","_"),
                         help='output folder')  # output folder
     parser.add_argument('--img-size', type=int, default=640,
@@ -289,13 +304,13 @@ if __name__ == '__main__':
     parser.add_argument('--device', default='',
                         help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--view-img', action='store_true',
-                        help='display results')
-    parser.add_argument('--save-img', action='store_true', default="True",
-                        help='save video file to output folder (disable for speed)')
+                        help='display results', default="True")
+    parser.add_argument('--save-img', action='store_true',
+                        default="True", help='save video file to output folder (disable for speed)')
     parser.add_argument('--save-txt', action='store_true',
                         help='save results to *.txt', default="True")
     parser.add_argument('--classes', nargs='+', type=int,
-                        default=[i for i in range(1)], help='filter by class') #80 classes in COCO dataset
+                        default=[i for i in range(2)], help='filter by class') #80 classes in COCO dataset
     parser.add_argument('--agnostic-nms', action='store_true',
                         help='class-agnostic NMS')
     parser.add_argument('--augment', action='store_true',

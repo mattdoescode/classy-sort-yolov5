@@ -136,7 +136,7 @@ dmypy.json
 *.mp4
 
 #output folder
-inference/output/
+inference/*
 RAW-FOOTAGE/*
 wandb/*
 
