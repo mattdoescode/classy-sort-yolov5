@@ -95,6 +95,7 @@ def connect(tableName):
 
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
+        sys.exit()
     return cur
     
 def insertRecordDB(cur, tableName, data):
@@ -167,7 +168,7 @@ def detect(opt, *args):
     out, source, weights, view_img, save_txt, imgsz, save_img, sort_max_age, sort_min_hits, sort_iou_thresh= \
         opt.output, opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, opt.save_img, opt.sort_max_age, opt.sort_min_hits, opt.sort_iou_thresh
     
-    webcam = source == '0' or source.startswith(
+    webcam = source == '0' or source == '1' or source.startswith(
         'rtsp') or source.startswith('http') or source.endswith('.txt')
     # Initialize SORT
     sort_tracker = Sort(max_age=sort_max_age,
@@ -211,7 +212,7 @@ def detect(opt, *args):
     save_path = str(Path(out))
     txt_path = str(Path(out))+'/results.txt'
 
-    tableName = os.path.split(out)[1]
+    tableName = os.path.split(out)[1] + "-" + str(source)
     cur = connect(tableName)
     
 
@@ -345,7 +346,7 @@ if __name__ == '__main__':
     # parser.add_argument('--source', type=str,
     #                     default='C:\\Users\\matt2\\Desktop\\working-camera\\RAW-FOOTAGE\\2021-12-07 16-33-49\\stills-camera-0', help='source')
     parser.add_argument('--source', type=str,
-                        default='0', help='source')
+                        default="1", help='source')
 
     parser.add_argument('--output', type=str, default='inference/output/'+str(datetime.today().replace(microsecond=0)).replace(":","_").replace(" ","_"),
                         help='output folder')  # output folder
