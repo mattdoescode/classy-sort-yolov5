@@ -17,11 +17,6 @@ from config import config
 
 # """ Connect to the PostgreSQL database server """
 
-def calcLocatoin(Database_Row):
-
-    print("hey")
-
-
 def run_program(opt, *args):
     single_object_track, single_camera_track, video_size, save_results = \
         opt.single_object_track, opt.single_camera_track, opt.video_size, opt.save_results
@@ -104,26 +99,6 @@ def run_program(opt, *args):
                 print("Not sure how'd you ever end up here")
             
         print("global location is (x,y,z):", locationGlobal['x'], locationGlobal['y'], locationGlobal['z'])
-
-        # np.random.seed(42)
-        # ages = np.random.randint(low = 8, high = 30, size=35)
-        # heights = np.random.randint(130, 195, 35)
-        # weights = np.random.randint(30, 160, 35)
-        # bmi = weights/((heights*0.01)**2)
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111, projection='3d')
-        # ax.scatter(xs = heights, ys = weights, zs = ages, s=bmi*5 )
-        # ax.set_title("Age-wise body weight-height distribution")
-        # ax.set_xlabel("Height (cm)")
-        # ax.set_ylabel("Weight (kg)")
-        # ax.set_zlabel("Age (years)")
-        # plt.show()
-
-
-
-
-        time.sleep(5)
-
 
     # eventually thread getting the locations
     # eventually thread updating visual 3D location of the fish 
