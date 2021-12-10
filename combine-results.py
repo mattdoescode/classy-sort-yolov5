@@ -2,6 +2,13 @@ import argparse
 import psycopg2
 import sys
 import time
+
+import matplotlib.pyplot as plt
+
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
+
+
 from config import config
 
 # this script gets the information from postgres about both cameras
@@ -9,6 +16,12 @@ from config import config
 # this script is also the VR screen for the fish
 
 # """ Connect to the PostgreSQL database server """
+
+def calcLocatoin(Database_Row):
+
+    print("hey")
+
+
 def run_program(opt, *args):
     single_object_track, single_camera_track, video_size, save_results = \
         opt.single_object_track, opt.single_camera_track, opt.video_size, opt.save_results
@@ -53,9 +66,19 @@ def run_program(opt, *args):
     tableNames = []    
     for item in enumerate(name):
         tableNames.append(item[1][0])
-        print("getting data from table:", item[1][0])
-    while True:
+        print(item[1][0])
 
+    #make 2D array to hold each item
+    #locations = [0*[2]] * len(tableNames) 
+    # locations = [[]]
+    locationGlobal = {'x':0, 'y':0, 'z':0}
+
+    #when we have 2 cameras
+    #camera 0 captures x,y - globally -> x,z
+    #camera 1 captures x,y - globally -> x,y
+
+    while True:
+        locationGlobal['x'] = locationGlobal['y'] = locationGlobal['z'] = 0
         for tableName in tableNames:
             try:
                 query = """
@@ -66,11 +89,40 @@ def run_program(opt, *args):
                 values = cur.fetchall()
             except (Exception, psycopg2.DatabaseError) as error:
                 print(error)
-                sys.exit()
-            for item in values:
-                print(item)
-        
-        time.sleep(10)
+
+            centerPointX = (values[0][2] + values[0][4]) / 2
+            centerPointY = (values[0][3] + values[0][5]) / 2
+
+            #convert from 2d camera perspective to 3d point
+            if tableName[-1] == "0":
+                locationGlobal['x'] = centerPointX
+                locationGlobal['z'] = centerPointY
+            elif tableName[-1] == "1":
+                locationGlobal['x'] = (locationGlobal['x'] + centerPointX) / 2
+                locationGlobal['y'] = centerPointY
+            else:
+                print("Not sure how'd you ever end up here")
+            
+        print("global location is (x,y,z):", locationGlobal['x'], locationGlobal['y'], locationGlobal['z'])
+
+        # np.random.seed(42)
+        # ages = np.random.randint(low = 8, high = 30, size=35)
+        # heights = np.random.randint(130, 195, 35)
+        # weights = np.random.randint(30, 160, 35)
+        # bmi = weights/((heights*0.01)**2)
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111, projection='3d')
+        # ax.scatter(xs = heights, ys = weights, zs = ages, s=bmi*5 )
+        # ax.set_title("Age-wise body weight-height distribution")
+        # ax.set_xlabel("Height (cm)")
+        # ax.set_ylabel("Weight (kg)")
+        # ax.set_zlabel("Age (years)")
+        # plt.show()
+
+
+
+
+        time.sleep(5)
 
 
     # eventually thread getting the locations
