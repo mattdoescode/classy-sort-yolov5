@@ -24,56 +24,52 @@ from config import config
 
 def animate(i, para):
 
-    print(i)
-    print(tableNames)
+    # print(i)
+    # print(tableNames)
     # GET INFO FROM DB
-    # for tableName in tableNames:
-    #     try:
-    #         query = """
-    #             SELECT * FROM "{}"
-    #             WHERE frame = (SELECT MAX(frame) FROM "{}")
-    #         """.format(tableName, tableName)
-    #         cur.execute(query)
-    #         values = cur.fetchall()
-    #     except (Exception, psycopg2.DatabaseError) as error:
-    #         print(error)
+    for tableName in tableNames:
+        try:
+            query = """
+                SELECT * FROM "{}"
+                WHERE frame = (SELECT MAX(frame) FROM "{}")
+            """.format(tableName, tableName)
+            cur.execute(query)
+            values = cur.fetchall()
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
 
-    #     centerPointX = (values[0][2] + values[0][4]) / 2
-    #     centerPointY = (values[0][3] + values[0][5]) / 2
+        centerPointX = (values[0][2] + values[0][4]) / 2
+        centerPointY = (values[0][3] + values[0][5]) / 2
 
-    #     #convert from 2d camera perspective to 3d point
-    #     if tableName[-1] == "0":
-    #         locationGlobal['x'] = centerPointX
-    #         locationGlobal['z'] = centerPointY
-    #     elif tableName[-1] == "1":
-    #         locationGlobal['x'] = (locationGlobal['x'] + centerPointX) / 2
-    #         locationGlobal['y'] = centerPointY
-    #     else:
-    #         print("Error with the camera")
+        #convert from 2d camera perspective to 3d point
+        if tableName[-1] == "0":
+            locationGlobal['x'] = centerPointX
+            locationGlobal['z'] = centerPointY
+        elif tableName[-1] == "1":
+            locationGlobal['x'] = (locationGlobal['x'] + centerPointX) / 2
+            locationGlobal['y'] = centerPointY
+        else:
+            print("Error with the camera")
     
-    #     print("global location is (x,y,z):", locationGlobal['x'], locationGlobal['y'], locationGlobal['z'])
+        print("global location is (x,y,z):", locationGlobal['x'], locationGlobal['y'], locationGlobal['z'])
  
 
     # NOW LETS DRAW THIS INFO
     plt.cla()
 
-    ax.axes.set_xlim3d(left=0, right=50) 
-    ax.axes.set_ylim3d(bottom=0, top=50) 
-    ax.axes.set_zlim3d(bottom=0, top=50)
+    ax.axes.set_xlim3d(left=0, right=600) 
+    ax.axes.set_ylim3d(bottom=0, top=600) 
+    ax.axes.set_zlim3d(bottom=0, top=600)
 
     ax.set_xlabel('X axis')
     ax.set_ylabel('Y axis')
     ax.set_zlabel('Z axis')
 
-    print('running 2')
     #scatter(x pos, y pos, z pos, s = size of plot point, label for legend)
-    ax.scatter(2,3,40, s = 500, label = "Fish 1")
+    ax.scatter(int(locationGlobal['x']),int(locationGlobal['y']),int(locationGlobal['z']), s = 500, label = "Fish 1")
 
-    print('running 3')
     plt.legend(loc='upper left')
-    print('running 4')
     plt.tight_layout()
-    print('running 5')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Object location determination")
@@ -154,8 +150,6 @@ if __name__ == '__main__':
     ani = FuncAnimation(fig, animate, fargs=(tableNames,),interval=100)
 
     #plt.tight_layout()
-    print("running 7")
     plt.show()
-    print("running 8")
     
     #run_program(args)
