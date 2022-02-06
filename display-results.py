@@ -17,8 +17,11 @@ from config import config
 # it them combines the data and makes a 3d map that follows the fish
 # this script is also the VR screen for the fish
 
-# """ Connect to the PostgreSQL database server """
+# !!!!!!!!!!
+# assume that DB records ending with '0' are front facing camera
+# assume that DB records ending with '1' are top down facing camera
 
+# """ Connect to the PostgreSQL database server """
 
 #def run_program(opt, *args):
 
@@ -27,6 +30,14 @@ def animate(i, para):
     # print(i)
     # print(tableNames)
     # GET INFO FROM DB
+
+    # table names can have 4 endings
+    """
+    0 - front facing camera live capture
+    1 - top facing camera live capture
+    2 - front facing recorded
+    3 - top facing recorded
+    """
     for tableName in tableNames:
         try:
             query = """
@@ -42,14 +53,15 @@ def animate(i, para):
         centerPointY = (values[0][3] + values[0][5]) / 2
 
         #convert from 2d camera perspective to 3d point
-        if tableName[-1] == "0":
+        if tableName[-1] == "0" or tableName[-1] == "2":
             locationGlobal['x'] = centerPointX
             locationGlobal['z'] = centerPointY
-        elif tableName[-1] == "1":
+        elif tableName[-1] == "1" or tableName[-1] == "3":
             locationGlobal['x'] = (locationGlobal['x'] + centerPointX) / 2
             locationGlobal['y'] = centerPointY
         else:
-            print("Error with the camera")
+            print("Error - unrecognized DB data")
+            sys.exit()
     
         print("global location is (x,y,z):", locationGlobal['x'], locationGlobal['y'], locationGlobal['z'])
  
@@ -57,9 +69,9 @@ def animate(i, para):
     # NOW LETS DRAW THIS INFO
     plt.cla()
 
-    ax.axes.set_xlim3d(left=0, right=600) 
-    ax.axes.set_ylim3d(bottom=0, top=600) 
-    ax.axes.set_zlim3d(bottom=0, top=600)
+    ax.axes.set_xlim3d(left=0, right=1000) 
+    ax.axes.set_ylim3d(bottom=0, top=1000) 
+    ax.axes.set_zlim3d(bottom=0, top=1000)
 
     ax.set_xlabel('X axis')
     ax.set_ylabel('Y axis')

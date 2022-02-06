@@ -32,6 +32,8 @@
     === end GNU License ===
 """
 
+# NOTES: When running on saved videos - playback is not in realtime but rather it's as fast as the computer can process 
+
 # python interpreter searchs these subdirectories for modules
 import sys
 sys.path.insert(0, './yolov5')
@@ -198,6 +200,25 @@ def detect(opt, *args):
         dataset = LoadStreams(source, img_size=imgsz)
     else:
         dataset = LoadImages(source, img_size=imgsz)
+
+        # get filename
+        lastDir = source.rfind("\\")
+        # source = filename without .avi 
+        source = source[lastDir+1:-4]
+
+        if "front" in source:
+            source = source+"-2"
+            print("front facing video recording")
+        elif "top" in source:
+            source = source+"-3"
+            print("top facing video recording")
+        else:
+            print("ERROR recognizing - video file")
+            print("if video is front facing file name must contain 'front'")
+            print("if video is top facing file name must contain 'top'")
+            sys.exit()
+
+        print("file source is: ", source)
     
     # get names of object categories from yolov5.pt model
     names = model.module.names if hasattr(model, 'module') else model.names 
@@ -214,7 +235,6 @@ def detect(opt, *args):
 
     tableName = os.path.split(out)[1] + "-" + str(source)
     cur = connect(tableName)
-    
 
     ######
         #PROCESSING EACH FRAME HERE
@@ -343,13 +363,14 @@ if __name__ == '__main__':
     # file_location = "C:\Users\matt2\Desktop\working-camera\RAW-FOOTAGE\2021-12-07 16-07-34\camera-one-at-2021-12-07 16-07-34.avi"
     # file_location = file_location.replace('\\','/')
 
+    parser.add_argument('--source', type=str, default='C:\\Users\\matt2\\Desktop\\Fish videos - final cuts\\1 yellow zebra fish\\1-front.avi', help='source')
     # parser.add_argument('--source', type=str,
-    #                     default='C:\\Users\\matt2\\Desktop\\working-camera\\RAW-FOOTAGE\\2021-12-07 16-33-49\\stills-camera-0', help='source')
-    parser.add_argument('--source', type=str,
-                        default="1", help='source')
+    #                     default="0", help='source')
 
-    parser.add_argument('--output', type=str, default='inference/output/'+str(datetime.today().replace(microsecond=0)).replace(":","_").replace(" ","_"),
+    parser.add_argument('--output', type=str, default='inference/processed-videos/'+str(datetime.today().replace(microsecond=0)).replace(":","_").replace(" ","_"),
                         help='output folder')  # output folder
+
+    print(str(datetime.today().replace(microsecond=0)).replace(":","_").replace(" ","_"))
     parser.add_argument('--img-size', type=int, default=640,
                         help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float,
