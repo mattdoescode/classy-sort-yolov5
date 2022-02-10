@@ -167,8 +167,8 @@ def draw_boxes(img, bbox, identities=None, categories=None, names=None, offset=(
     return img
 
 def detect(opt, *args):
-    out, source, weights, view_img, save_txt, imgsz, save_img, sort_max_age, sort_min_hits, sort_iou_thresh= \
-        opt.output, opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, opt.save_img, opt.sort_max_age, opt.sort_min_hits, opt.sort_iou_thresh
+    out, source, weights, view_img, save_txt, imgsz, save_img, sort_max_age, sort_min_hits, sort_iou_thresh, perspective_transformation = \
+        opt.output, opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, opt.save_img, opt.sort_max_age, opt.sort_min_hits, opt.sort_iou_thresh, opt.perspective_transformation
     
     webcam = source == '0' or source == '1' or source.startswith(
         'rtsp') or source.startswith('http') or source.endswith('.txt')
@@ -239,6 +239,13 @@ def detect(opt, *args):
     ######
         #PROCESSING EACH FRAME HERE
     ####
+
+    if perspective_transformation:
+        print("changing")
+    else:
+        print("not changing nothing")
+
+    time.sleep(20)
 
     imgRaw = ""
     for frame_idx, (path, img, im0s, vid_cap) in enumerate(dataset): #for every frame
@@ -393,7 +400,8 @@ if __name__ == '__main__':
                         help='class-agnostic NMS')
     parser.add_argument('--augment', action='store_true',
                         help='augmented inference')
-    
+    parser.add_argument('--perspective-transformation', default="True")
+
     #SORT params
     parser.add_argument('--sort-max-age', type=int, default=5,
                         help='keep track of object even if object is occluded or not detected in n frames')
