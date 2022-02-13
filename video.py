@@ -90,13 +90,12 @@ while len(saved_points) != 4:
     drawPoints()
     cv2.imshow('frame',frame)  
 
-    if len(saved_points) == 4:
-        print("saved points is 4")
-        for item in saved_points:
-            print(item)
-
     if cv2.waitKey(24) == 27:
         break
+
+print("4 saved points")
+for item in saved_points:
+    print(item)
 
 #stop recording mouse clicks
 cv2.setMouseCallback("frame",lambda *args : None)
