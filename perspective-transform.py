@@ -1,5 +1,13 @@
-import cv2
-import numpy as np
+"""
+Takes raw video footage or saved file and applies a manual Perspective Transformation 
+such that the output is (1) scaled to a format that can be used pixels to real world units. 
+                    and (2) corrects for distoration / improperly positioned camera
+
+Currently this file is setup to map a 640 x 480p camera to a standard 10 gallon fish tank
+
+Matthew Loewen
+2/13/2022
+"""
 
 """ "output resolution"
 
@@ -36,10 +44,18 @@ SO....
 10.5 x 31.6049382716 = 331.851851852 -> Our Z will be 332 pixels
 
 As we track the fish we can use these coordinates to translte to real world location
+
 """
 
-cap = cv2.VideoCapture(0)
+import cv2
+import numpy as np
+from os.path import exists
+import sys
+import datetime
 
+convertvideo = True
+conversionFile = r"C:\Users\matt2\Desktop\Fish videos - final cuts\1 yellow zebra fish\1-front-30-second-clip.mp4"
+saveVideo = True
 
 #point order 
 #TL, TR, BR, BL
@@ -49,7 +65,7 @@ tank_points = [[0,0],[640,0],[640,399],[0,399]]
 scaledResolution = [640, 399, 332]
 # TO DO: write conversion function for dynamic tank size + camera resolution
 
-#record mouse clicks to create box for perspective mapping
+#record mouse clicks
 def mousePoints(event,x,y,flags,params):
     if event == cv2.EVENT_LBUTTONDOWN:
         saved_points.append([x,y])
@@ -61,6 +77,7 @@ def drawPoints():
 
 #make a box around points
 def connectPoints():
+    if len(saved_points) < 2: return
     previous = []
     first = []
     for point in saved_points:
@@ -79,14 +96,25 @@ def connectPoints():
         previous = point
     previous = []
 
-#start video capture
+if convertvideo and not exists(conversionFile):
+    print("Invalid path to file")
+    sys.exit()
+
+if convertvideo:
+    cap = cv2.VideoCapture(conversionFile)
+else:
+    cap = cv2.VideoCapture(0)
+
 ret, frame = cap.read()
 cv2.imshow('frame', frame)
 cv2.setMouseCallback("frame", mousePoints)
 
 #get tank points
-while len(saved_points) != 4: 
-    ret, frame = cap.read()
+while len(saved_points) != 4:
+
+    if not convertvideo:
+        frame = cap.read()
+
     drawPoints()
     cv2.imshow('frame',frame)  
 
@@ -105,11 +133,31 @@ print(saved_points)
 print(tank_points)
 matrix = cv2.getPerspectiveTransform(np.float32(saved_points), np.float32(tank_points))
 
-while 1:
+base = "corrected-video"
+filename = ""
+if convertvideo:
+    #get filename and remove .avi
+    lastDir = conversionFile.rfind("\\")
+    # print(lastDir)
+    # lastDir = lastDir[lastDir+1:-4]
+    lastDir = "Converted-" + str(lastDir) + ".avi"
+else:
+    lastDir = "/"
+
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+fps = cap.get(cv2.CAP_PROP_FPS)
+video_writer = cv2.VideoWriter(lastDir,fourcc, fps, (scaledResolution[0],scaledResolution[1]))
+
+while cap.isOpened():
     ret, frame = cap.read()
+    
+    if not ret:
+        video_writer.release()
+        print("end of processing")
+        sys.exit()
 
     #apply matrix to new frame
-    result = cv2.warpPerspective(frame, matrix,(640,399))
+    result = cv2.warpPerspective(frame, matrix,(scaledResolution[0],scaledResolution[1]))
 
     #still draw bounding box on raw video capture
     drawPoints()
@@ -117,10 +165,10 @@ while 1:
 
     cv2.imshow('frame',frame)
     cv2.imshow('conversion', result) # Transformed Capture
+
+    video_writer.write(result)
+
     if cv2.waitKey(24) == 27:
         break
 
-#stops cv2 from quitting
-cv2.waitKey(0)
-
-
+print("converted file")
