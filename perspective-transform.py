@@ -53,7 +53,7 @@ from os.path import exists
 import sys
 import datetime
 
-convertvideo = True
+convertvideo = False
 conversionFile = r"C:\Users\matt2\Desktop\Fish videos - final cuts\1 yellow zebra fish\1-front-30-second-clip.mp4"
 saveVideo = True
 
@@ -113,17 +113,13 @@ cv2.setMouseCallback("frame", mousePoints)
 while len(saved_points) != 4:
 
     if not convertvideo:
-        frame = cap.read()
+        ret, frame = cap.read()
 
     drawPoints()
     cv2.imshow('frame',frame)  
 
     if cv2.waitKey(24) == 27:
         break
-
-print("4 saved points")
-for item in saved_points:
-    print(item)
 
 #stop recording mouse clicks
 cv2.setMouseCallback("frame",lambda *args : None)
@@ -142,16 +138,18 @@ if convertvideo:
     # lastDir = lastDir[lastDir+1:-4]
     lastDir = "Converted-" + str(lastDir) + ".avi"
 else:
-    lastDir = "/"
+    lastDir = "file.avi"
 
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
-fps = cap.get(cv2.CAP_PROP_FPS)
-video_writer = cv2.VideoWriter(lastDir,fourcc, fps, (scaledResolution[0],scaledResolution[1]))
+if saveVideo:
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    video_writer = cv2.VideoWriter(lastDir,fourcc, fps, (scaledResolution[0],scaledResolution[1]))
+
 
 while cap.isOpened():
     ret, frame = cap.read()
     
-    if not ret:
+    if not ret and saveVideo:
         video_writer.release()
         print("end of processing")
         sys.exit()
@@ -166,7 +164,8 @@ while cap.isOpened():
     cv2.imshow('frame',frame)
     cv2.imshow('conversion', result) # Transformed Capture
 
-    video_writer.write(result)
+    if saveVideo:
+        video_writer.write(result)
 
     if cv2.waitKey(24) == 27:
         break
