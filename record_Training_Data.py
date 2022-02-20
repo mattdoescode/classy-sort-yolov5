@@ -3,10 +3,11 @@ import numpy as np
 import os
 import cv2
 from datetime import datetime
+import time
 
 filename = 'video.avi'
 frames_per_second = 30
-res = '480p'
+res = '1080p'
 
 # Set resolution for the video capture
 # Function adapted from https://kirr.co/0l6qmh
@@ -42,6 +43,37 @@ def get_dims(cap, res='1080p'):
     change_res(cap, width, height)
     return width, height
 
+def get_perspective_points():
+    #point order 
+    #TL, TR, BR, BL
+    saved_points = []
+
+#draw mouse clicks
+def drawPoints(saved_points, frame):
+    for points in saved_points: 
+        cv2.circle(frame, (points[0],points[1]), 5, (0,255),5)
+
+#draw a box with the points
+def connectPoints(saved_points, frame):
+    if len(saved_points) < 2: return
+    previous = []
+    first = []
+    for point in saved_points:
+        if not previous and not first:
+            first = point
+            previous = point
+            continue
+        
+        #last point draws to the first 
+        #last point draws to second last visited
+        if saved_points[-1] == point:
+            cv2.line(frame,[point[0],point[1]],[first[0],first[1]],(0,200,0),3)
+            cv2.line(frame,[previous[0],previous[1]],[point[0],point[1]],(0,200,0),3)
+        else:
+            cv2.line(frame,[previous[0],previous[1]],[point[0],point[1]],(0,200,0),3)
+        previous = point
+    previous = []
+
 # Video Encoding, might require additional installs
 # Types of Codes: http://www.fourcc.org/codecs.php
 VIDEO_TYPE = {
@@ -58,11 +90,13 @@ def get_video_type(filename):
 
 
 class newThread(threading.Thread):
-    def __init__(self, name, number, theTime):
+    def __init__(self, name, number, theTime, correction_points):
         threading.Thread.__init__(self)
         self.name = name
         self.number = number
         self.time = theTime
+        self.correction_points = correction_points
+
 
     def run(self):
         
@@ -80,8 +114,8 @@ class newThread(threading.Thread):
         print("is running at resolution:", width, "x", height, "at", fps, "fps")
 
         #make folder for stills
-        make_dir(runfolder+"\\"+"stills-camera-"+str(self.number))
-        outputLocation = runfolder+"\\"+"stills-camera-"+str(self.number)
+        make_dir(runfolder+"\\"+"stills-"+str(self.number))
+        outputLocation = runfolder+"\\"+"camera-"+str(self.number)
 
         currentFrame = 0
         while True:
@@ -98,11 +132,48 @@ class newThread(threading.Thread):
                 break
 
 
+top_points = []
+front_points = []
+
+def getPointsThread(camID, view, save_points):
+    
+    print('run')
+    cap = cv2.VideoCapture(camID)
+    ret, frame = cap.read()
+    cv2.imshow(view, frame)
+    cv2.setMouseCallback(view, save_points)
+
+    #get tank points
+    while len(save_points) != 4:
+
+        ret, frame = cap.read()
+
+        drawPoints(save_points, frame)
+        cv2.imshow(view,frame)  
+
+        if cv2.waitKey(24) == 27:
+            break
+
+    drawPoints(save_points, frame)
+    connectPoints(save_points, frame)
+    cv2.imshow(view,frame)
+    print(save_points)
+
+
+
 runTime = str(datetime.today().replace(microsecond=0)).replace(":","-")
-filename = "file.avi"
 
-one = newThread("one",0, runTime)
-two = newThread("two",1, runTime)
+# front_correction_points = getPointsThread(0, "front", [])
+# top_correction_points = getPointsThread(1, "top", [])
+front_correction_points = threading.Thread(target=getPointsThread, args= (0, "front", front_points))
+front_correction_points.start()
 
-one.start()
-two.start()
+
+# front_points = front_correction_points.run()
+# top_points = top_correction_points.run()
+
+# one = newThread("Front-facing-Camera",0, runTime, front_points)
+# two = newThread("Top-facing-camera",1, runTime, top_points)
+
+# one.start()
+# two.start()
