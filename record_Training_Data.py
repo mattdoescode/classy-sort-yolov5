@@ -79,8 +79,6 @@ def get_video_type(filename):
       return  VIDEO_TYPE[ext]
     return VIDEO_TYPE['avi']
 
-
-
 class captureThread(threading.Thread):
     def __init__(self, name, cameraID, theTime, correction_points):
         threading.Thread.__init__(self)
@@ -97,12 +95,15 @@ class captureThread(threading.Thread):
     def run(self):
         basefolder = "RAW-FOOTAGE"
         runfolder = basefolder+"\\" + self.time
-        if self.name == "one":
+        if self.name == "Top-facing-Camera":
             make_dir(runfolder)
         outPut = runfolder + "\\camera-"+str(self.name) +"-at-"+ str(self.time)
+        outPutConverted = runfolder + "\\converted-"+str(self.name) +"-at-"+ str(self.time)
 
         cap = cv2.VideoCapture(self.cameraID)
+
         out = cv2.VideoWriter(outPut+".avi", get_video_type(filename), 30, get_dims(cap, res))
+        outConverted = cv2.VideoWriter(outPutConverted+".avi", get_video_type(filename), 30, (1920,1197))
 
         # width  = cap.get(cv2.CAP_PROP_FRAME_WIDTH)   # float `width`
         # height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float `height`
@@ -120,7 +121,14 @@ class captureThread(threading.Thread):
             out.write(frame)
             cv2.imwrite(outputLocation+"\\"+str(currentFrame)+".jpg",frame)
 
+            #apply matrix to new frame
+            result = cv2.warpPerspective(frame, self.correction_matrix,(1920,1197))
+            
+            outConverted.write(result)
+            #show frames
+            cv2.imshow('conversion-'+self.name, result) # Transformed Capture
             cv2.imshow(self.name,frame)
+
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 cap.release()
                 out.release()
