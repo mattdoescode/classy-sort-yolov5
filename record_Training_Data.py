@@ -1,14 +1,26 @@
+
+"""
+This script records from 2 webcams, converts video feeds with a perspective transformation 
+
+Outputs: 
+2 video files of unedited footage, 2 video files of perspective transformed footage
+2 folders of still images 1 per video feed of the untransformed footage. 
+
+DO NOT USE
+    cv2.VideoWriter_fourcc(*'XVID')
+For some reason this causes video output to slightly faster than it should be. 
+
+"""
+
 import threading
 import numpy as np
 import os
 import cv2
 from datetime import datetime
-import time
-import random
 
 filename = 'video.avi'
 frames_per_second = 30
-res = '1080p'
+res = '720p'
 
 # Set resolution for the video capture
 # Function adapted from https://kirr.co/0l6qmh
@@ -35,14 +47,14 @@ def make_dir(directoryName):
 
 
 # grab resolution dimensions and set video capture to it.
-def get_dims(cap, res='1080p'):
-    width, height = STD_DIMENSIONS["480p"]
-    if res in STD_DIMENSIONS:
-        width,height = STD_DIMENSIONS[res]
-    ## change the current caputre device
-    ## to the resulting resolution
-    change_res(cap, width, height)
-    return width, height
+# def get_dims(cap, res='1080p'):
+#     width, height = STD_DIMENSIONS["480p"]
+#     if res in STD_DIMENSIONS:
+#         width,height = STD_DIMENSIONS[res]
+#     ## change the current caputre device
+#     ## to the resulting resolution
+#     change_res(cap, width, height)
+#     return width, height
 
 #draw a box with the points
 def connectPoints(saved_points, frame):
@@ -70,7 +82,7 @@ def connectPoints(saved_points, frame):
 VIDEO_TYPE = {
     'avi': cv2.VideoWriter_fourcc(*'XVID'),
     #'mp4': cv2.VideoWriter_fourcc(*'H264'),
-    'mp4': cv2.VideoWriter_fourcc(*'XVID'),
+    'mp4': cv2.VideoWriter_fourcc(*'MP4V'),
 }
 
 def get_video_type(filename):
@@ -87,7 +99,7 @@ class captureThread(threading.Thread):
         self.time = theTime
         self.correction_points = correction_points
         #scaled output points in the order of TL,TR,BR,BL
-        self.tank_points = [[0,0],[1920,0],[1920, 1197], [0,1197]] 
+        self.tank_points = [[0,0],[1280,0],[1280, 798], [0,798]] 
         #calculation for correction-matrix
         self.correction_matrix = cv2.getPerspectiveTransform(np.float32(self.correction_points), 
                                                             np.float32(self.tank_points))
@@ -100,19 +112,31 @@ class captureThread(threading.Thread):
         outPut = runfolder + "\\camera-"+str(self.name) +"-at-"+ str(self.time)
         outPutConverted = runfolder + "\\converted-"+str(self.name) +"-at-"+ str(self.time)
 
+        #try to manually set resolution + fps
         cap = cv2.VideoCapture(self.cameraID)
+        cap.set(3, 1280)
+        cap.set(4, 720)
+        cap.set(5, 30)
 
-        out = cv2.VideoWriter(outPut+".avi", get_video_type(filename), 30, get_dims(cap, res))
-        outConverted = cv2.VideoWriter(outPutConverted+".avi", get_video_type(filename), 30, (1920,1197))
-
+        # print('video out - trying to set')
         # width  = cap.get(cv2.CAP_PROP_FRAME_WIDTH)   # float `width`
         # height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float `height`
         # fps = cap.get(cv2.CAP_PROP_FPS)
-        # print("is running at resolution:", width, "x", height, "at", fps, "fps")
+        # print(self.name, "is running at resolution:", width, "x", height, "at", fps, "fps")
+
+        out = cv2.VideoWriter(outPut+".mp4", cv2.VideoWriter_fourcc(*'MP4V'), cap.get(cv2.CAP_PROP_FPS), (1280,720))
+        outConverted = cv2.VideoWriter(outPutConverted+".avi", get_video_type(filename), cap.get(cv2.CAP_PROP_FPS), (1920,1197))
+
+        # print('video out - ACTUALLY')
+        # width  = cap.get(cv2.CAP_PROP_FRAME_WIDTH)   # float `width`
+        # height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float `height`
+        # fps = cap.get(cv2.CAP_PROP_FPS)
+        # print(self.name, "is running at resolution:", width, "x", height, "at", fps, "fps")
+
 
         #make folder for stills
-        make_dir(runfolder+"\\"+"stills-"+str(self.cameraID))
         outputLocation = runfolder+"\\"+"camera-"+str(self.cameraID)
+        make_dir(outputLocation+"\\"+"stills-"+str(self.cameraID))
 
         currentFrame = 0
         while True:
@@ -156,9 +180,15 @@ class getPoints(threading.Thread):
         cap = cv2.VideoCapture(self.camID)
 
         #manually set 1080p @ 30fps
-        cap.set(3, 1920)
-        cap.set(4, 1080)
+        cap.set(3, 1280)
+        cap.set(4, 720)
         cap.set(5, 30)
+
+        print("capture points")
+        width  = cap.get(cv2.CAP_PROP_FRAME_WIDTH)   # float `width`
+        height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float `height`
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        print(self.name, "is running at resolution:", width, "x", height, "at", fps, "fps")
 
         ret, frame = cap.read()
         cv2.imshow(self.name,frame)  
