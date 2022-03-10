@@ -6,22 +6,27 @@ Scripts & Data flow
 2. Train Network -> yolov5/train.py
 <p>To train the network we need to label training data and set aside testing data. Copy over instructions from other github</p>
 <p>Talk about picking a network model - steps to train </p>
+<p>Talk about selecting training data</p>
 
 3. Run network w/ classy sort -> class_track.py
 <p>Take trained weights file and run the network</p>
-<p>Running two instances of the YOLO network using webcam footage. One per live video feed. This script does object detection, object classification, saves a raw video capture, saves a video capture with detection data, and saves all information to a local PostgreSQL database. I've achieved 98% accuracy for detection at 75 fps for 1 camera and 35 fps x 2 for 2 cameras. With a GTX 3080 10gb vram card.</p>
+<p>Running two instances of the YOLO network using webcam footage. One per live video feed. This script does object detection, object classification, saves a raw video capture, saves a video capture with detection data, and saves all information to a local PostgreSQL database. I've achieved 97% accuracy for detection at 75 fps for 1 camera and 35 fps x 2 for 2 cameras. With a GTX 3080 10gb card.</p>
 <p>This script can run with SORT (object tracking with an ID across a series of frames) or without SORT where it just detects objects present in a given frame.</p>
 <p>Saved detections to postgresql database and .txt file, outputs raw video capture</p>
 
 4. Display 3D locations + virtual background -> display-results.py
-<p> Pulls information from the database and calculates a 3D location, displays this location. </p>
+<p> Pulls information from the database and calculates a 3D location in real time, displays this location. </p>
+<p> Can be run on saved runs from the database </p>
 <p> Generates a virtual background and displays this</p>
+
+<p> talk about $ funding problem </p>
+<p> reflections problems </p>
 
 ## Additional files
 
 Original stuff in the repo
 
-# ℂ𝕝𝕒𝕤𝕤𝕪𝕊𝕆ℝ𝕋
+# Classysort
 
 ClassySORT is a simple real-time multi-object tracker (MOT) that works for any kind of object class (not just people).
 

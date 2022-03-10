@@ -1,4 +1,15 @@
 """
+    IMPORTANT THINGS:
+
+# NOTES: When running on saved videos - playback is not in realtime but rather it's as fast as the computer can process 
+    # this is approxmately 100 frames person second with a rtx 3080 (~3x real time speed @ 30 fps footage)
+
+Params to triple check for corectness:
+    #Weights -> make sure correct weights for the dataset
+    #Source -> don't process the wrong video feed
+"""
+
+"""
     ClassySORT
     
     YOLO v5(image segmentation) + vanilla SORT(multi-object tracker) implementation 
@@ -13,7 +24,6 @@
     
     
     Copyright (C) 2020-2021 Jason Sohn tensorturtle@gmail.com
-    
     
     === start GNU License ===
     
@@ -32,7 +42,6 @@
     === end GNU License ===
 """
 
-# NOTES: When running on saved videos - playback is not in realtime but rather it's as fast as the computer can process 
 
 # python interpreter searchs these subdirectories for modules
 import sys
@@ -206,19 +215,20 @@ def detect(opt, *args):
         # source = filename without .avi 
         source = source[lastDir+1:-4]
 
+        print("PROCESSING SAVED FILE FROM CAMERA PERSPECTIVE: ")
         if "front" in source:
             source = source+"-2"
-            print("front facing video recording")
+            print("front")
         elif "top" in source:
             source = source+"-3"
-            print("top facing video recording")
+            print("top")
         else:
             print("ERROR recognizing - video file")
             print("if video is front facing file name must contain 'front'")
             print("if video is top facing file name must contain 'top'")
             sys.exit()
 
-        print("file source is: ", source)
+        print("VIDEO FILE SOURCE IS: ", os.path.abspath(source))
     
     # get names of object categories from yolov5.pt model
     names = model.module.names if hasattr(model, 'module') else model.names 
@@ -232,21 +242,24 @@ def detect(opt, *args):
     
     save_path = str(Path(out))
     txt_path = str(Path(out))+'/results.txt'
+    print("OUTPUT FILES WILL BE SAVED TO: ", os.path.abspath(save_path))
 
     tableName = os.path.split(out)[1] + "-" + str(source)
     cur = connect(tableName)
 
-    ######
-        #PROCESSING EACH FRAME HERE
-    ####
+    #could do perspective transformation stuff here
+    # if perspective_transformation:
+    #     print("changing")
+    # else:
+    #     print("not changing nothing")
 
-    if perspective_transformation:
-        print("changing")
-    else:
-        print("not changing nothing")
-
+    print("sleeping for 20 seconds before starting")
+    print("ensure settings are correct... ")
     time.sleep(20)
 
+    ######
+        #PROCESSING EACH FRAME HERE
+    #####
     imgRaw = ""
     for frame_idx, (path, img, im0s, vid_cap) in enumerate(dataset): #for every frame
         img= torch.from_numpy(img).to(device)
@@ -260,6 +273,7 @@ def detect(opt, *args):
         pred = model(img, augment=opt.augment)[0] 
 
         # Apply NMS
+        # multiple detections at same location -> combine to become one
         pred = non_max_suppression(
             pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
         t2 = time_synchronized()
@@ -332,10 +346,10 @@ def detect(opt, *args):
             # Save video results
             if save_img:
                 if dataset.mode == 'images':
-                    print('saving img!')
+                    # print('saving img!')
                     cv2.imwrite(save_path, im0)
                 else:
-                    print('saving video!')
+                    # print('saving video!')
                     print("vid path is", vid_path)
                     print("save_path is", save_path)
                     if vid_path != save_path:  # new video
@@ -366,7 +380,6 @@ if __name__ == '__main__':
     parser.add_argument('--weights', type=str,
                         default='C:\\Users\\matt2\\Desktop\\NON-mod-CLASSSY\\classy-sort-yolov5-main\\best.pt', help='model.pt path')
     # file/folder, 0 for webcam
-
     # file_location = "C:\Users\matt2\Desktop\working-camera\RAW-FOOTAGE\2021-12-07 16-07-34\camera-one-at-2021-12-07 16-07-34.avi"
     # file_location = file_location.replace('\\','/')
 
@@ -377,7 +390,7 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=str, default='inference/processed-videos/'+str(datetime.today().replace(microsecond=0)).replace(":","_").replace(" ","_"),
                         help='output folder')  # output folder
 
-    print(str(datetime.today().replace(microsecond=0)).replace(":","_").replace(" ","_"))
+    print("STARTING SCRIPT AT:",str(datetime.today().replace(microsecond=0)).replace(":","_").replace(" ","_"))
     parser.add_argument('--img-size', type=int, default=640,
                         help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float,
@@ -412,7 +425,7 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     args.img_size = check_img_size(args.img_size)
-    print(args)
+    print("arguments for this script are:".upper(), args)
 
     with torch.no_grad():
         detect(args)
