@@ -7,6 +7,8 @@ on this. Subsequent pairings (tracking) is done via the ID's given from YOLO out
 4. drives virtual reality screen 
 """
 
+errorAcceptance = 75
+
 #camera 0 - front facing camera - captures x,y - globally -> x,z
 #camera 1 - top facing camera - captures x,y - globally -> x,y
 
@@ -17,24 +19,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
+#turn off warnings from myplotlib
+import logging
+logging.getLogger().setLevel(logging.CRITICAL)
+
 #db info
 from config import config
 
 class detectedObject():
     def __init__(self):
-        self.TopX1 = None
-        self.TopY1 = None
-        self.TopX2 = None
-        self.TopY2 = None
-        self.FrontX1 = None
-        self.FrontY1 = None
-        self.FrontX2 = None
-        self.FrontY2 = None
-        self.TopIDNum = None
-        self.FrontIDNum = None
-        self.TopFrame = None
-        self.FrontFrame = None
-        self.Completed = False
+        self.uniqueID = None
+        self.X1 = None
+        self.Y1 = None
+        self.X2 = None
+        self.Y2 = None
+        self.frame = None
+        self.sortID = None
 
 def getTableView(tableName):
     if "top" in tableName or "TOP" in tableName or "Top" in tableName:
@@ -46,32 +46,33 @@ def getTableView(tableName):
         print("table name w/ error is: ", tableName)
         sys.exit("check DB table name")
 
-#create temp object + add properties based on camera perspective
+#create temp object + add properties based on camera perspective (3d)
 def createTrackedObjectFromDBData(tableName, dbRecord):
+     #each DB record is 
+        #recordID, frame#, x1, y1, x2, y2, detected object, sort item ID
     currentTemp = detectedObject()
     if "top" in tableName or "TOP" in tableName or "Top" in tableName:
-        currentTemp.TopX1 = dbRecord[2]
-        currentTemp.TopY1 = dbRecord[3]
-        currentTemp.TopX2 = dbRecord[4]
-        currentTemp.TopY2 = dbRecord[5]
-        currentTemp.TopFrame = dbRecord[1]
-        currentTemp.TopIDNum = dbRecord[7]
+        currentTemp.uniqueID = str(dbRecord[0]) +"-top"
     elif "front" in tableName or "FRONT" in tableName or "Front" in tableName:
-        currentTemp.FrontX1 = dbRecord[2]
-        currentTemp.FrontY1 = dbRecord[3]
-        currentTemp.FrontX2 = dbRecord[4]
-        currentTemp.FrontY2 = dbRecord[5]
-        currentTemp.FrontFrame = dbRecord[1]
-        currentTemp.FrontIDNum = dbRecord[7]
+        currentTemp.uniqueID = str(dbRecord[0]) +"-front"
     else:
         print("ERROR - DB TABLE NAME REQUIRED TO HAVE 'FRONT' or 'TOP' in name")
         sys.exit()
+    currentTemp.frame = dbRecord[1]
+    currentTemp.X1 = dbRecord[2]
+    currentTemp.Y1 = dbRecord[3]
+    currentTemp.X2 = dbRecord[4]
+    currentTemp.Y2 = dbRecord[5]
+    currentTemp.sortID = dbRecord[7]
     return currentTemp
 
 def animate(i, para):
     #each detection saved as on object
     tempDetected = []
-    
+    #make temp records for second camera
+    secondTempDetected = [] 
+    #potential parings
+    allPossiblePairs = []
     #get most recent detection data from each camera perspective
     for tableName in tableNames:
         try:
@@ -95,13 +96,90 @@ def animate(i, para):
 
         #if both cameras have == number of detections
         if tempDetected and len(tempDetected) == len(values):
-            #make temp records for second camera
+            for dbRecord in values:
+                secondTempDetected.append(createTrackedObjectFromDBData(tableName, dbRecord))
+
             #find pairings
+            #match on the similar x axis
+            for firstItem in sorted(tempDetected, key=lambda detectedObject: ((detectedObject.X1 + detectedObject.X2)/2)):
+                for secondItem in sorted(secondTempDetected, key=lambda detectedObject: ((detectedObject.X1 + detectedObject.X2)/2)):
+                    if abs((detectedObject.X1 + detectedObject.X2)/2) > errorAcceptance:
+                        continue
+                    allPossiblePairs.append([firstItem,
+                                            secondItem,
+                                            abs(
+                                                (firstItem.X1 + firstItem.X2)/2 - (secondItem.X1 + secondItem.X2)/2
+                                            ), 
+                                            None])
+            ###FIND THE BEST MATCHES
+            #find matches
+            finalizedIDs = []
+            if (len(allPossiblePairs) > 1):
+                counter = 0
+                for i in range(len(allPossiblePairs[:-1])):
+                    # allPossiblePairs = [x for x in allPossiblePairs if remove(x)]
+
+                    # records might have been processed in the while loop
+                    # if so skip
+                    if counter > 0:
+                        counter = counter - 1
+                        continue
+                    #if only 1 match per 1 detection it must be a true match
+                    if(allPossiblePairs[i][0] != allPossiblePairs[i+1][0]):
+                        allPossiblePairs[i][3] = True
+                        finalizedIDs.append(allPossiblePairs[i][0].uniqueID)
+                        finalizedIDs.append(allPossiblePairs[i][1].uniqueID)   
+                    #if we have multiple detections
+                    #determine what is best for the current detection
+                    else:
+                        counter = 1
+                        bestDetection = i
+                        #check if next index exists (IT ALWAYS WILL ON FIRST LOOP)
+                        while len(allPossiblePairs) > i+counter:
+                            #check if we need to process (WE ALWAYS WILL FIRST TIME)
+                            if(allPossiblePairs[i][0] == allPossiblePairs[i+counter][0]):
+                                #if bestDetection is worse update bestDetection
+                                if(allPossiblePairs[bestDetection][2] > allPossiblePairs[i+counter][2]):
+                                    bestDetection = i+counter
+                                counter = counter + 1
+                            else:
+                                break
+                        allPossiblePairs[bestDetection][3] = True
+                        finalizedIDs.append(allPossiblePairs[bestDetection][0].uniqueID)
+                        finalizedIDs.append(allPossiblePairs[bestDetection][1].uniqueID)
+            elif(len(allPossiblePairs) == 1):
+                #if only 1 match it must be a true match
+                allPossiblePairs[0][3] = True
+                finalizedIDs.append(allPossiblePairs[0][0].uniqueID)
+                finalizedIDs.append(allPossiblePairs[0][1].uniqueID)   
+            else:
+                print('nothing to look at')
+                pass
+            
             #if valid pairings turn into final detections
+            validPairs = []
+            validDetections = False
+            for possiblePair in allPossiblePairs:
+                if(possiblePair[3] == True):
+                        if len(finalizedIDs) == 0:
+                            break
+                        setOfElems = set()
+                        for elem in finalizedIDs:
+                            if elem in setOfElems:
+                                break
+                            else:
+                                setOfElems.add(elem)   
+                        #if all checks are passed we have valid detections      
+                        validDetections = True
+            
+            if validDetections:            
+                print("Valid detections: ", len(validPairs))
+            else:
+                print("no valid pairs")
+    
             #compare new detections with existing 
             #draw updates
-            pass
-    
+        
         #when processing first camera
         #turn detections into temp objects
         elif not tempDetected and len(values) > 0:
@@ -109,14 +187,17 @@ def animate(i, para):
                 currentTemp = createTrackedObjectFromDBData(tableName, dbRecord)
                 tempDetected.append(currentTemp)
         
-        #when len of both detections != 
+        #first camera has 0 results
         elif not tempDetected and len(values) == 0:
             #this will result with an incomplete 3D record. 
             pass
+        #every other case do nothing
+        else:
+            pass
 
     #COMPARE temp records to existing records
+    
     ##### DO SOMETHING HERE
-
     # PLOT FISH
     #ax.scatter(x pos, y pos, z pos, s = size of plot point, label for legend)
 
