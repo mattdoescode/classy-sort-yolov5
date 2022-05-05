@@ -17,7 +17,7 @@ tank measures 10 gal are
 12.625" height
 10.5" width
 
-Used webcam records at 640 x 480
+for a 640 x 480
 
     640
 -------------
@@ -45,13 +45,47 @@ SO....
 
 As we track the fish we can use these coordinates to translte to real world location
 
+new 
+
+    1920
+------------
+|          | 1080
+|          |
+|          |
+------------
+
+1920 = 20.25
+
+1 pixel = 0.010546875 inch
+94.8148148148 pixels = 1 inch 
+
+
+x = 1920 pixels
+y = 12.625 x 94.8148148148 = 1197.03703704
+z = 10.5 x 94.8148148148 = 995
+
+
+20.25" length
+12.625" height
+10.5" width
+
+---------------
+
+1280 x 720
+1280px = 20.25"
+x = 1280
+1 px = 0.0158203125 in
+63.2098765432px = 1 inch
+y = 12.625 x 63.2098765432 = 798.024691358
+z = 10.5 x 63.2098765432 = 663.703703704
+
 """
 
 import cv2
 import numpy as np
 from os.path import exists
 import sys
-import datetime
+
 
 convertvideo = False
 conversionFile = r"C:\Users\matt2\Desktop\Fish videos - final cuts\1 yellow zebra fish\1-front-30-second-clip.mp4"
@@ -60,6 +94,7 @@ saveVideo = True
 #point order 
 #TL, TR, BR, BL
 saved_points = []
+# To do... cam 1 cords, cam 2 cords
 tank_points = [[0,0],[640,0],[640,399],[0,399]]
 # X, Y, Z
 scaledResolution = [640, 399, 332]
@@ -143,7 +178,7 @@ else:
 if saveVideo:
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     fps = cap.get(cv2.CAP_PROP_FPS)
-    video_writer = cv2.VideoWriter(lastDir,fourcc, fps, (scaledResolution[0],scaledResolution[1]))
+    video_writer = cv2.VideoWriterD(lastDir,fourcc, fps, (scaledResolution[0],scaledResolution[1]))
 
 
 while cap.isOpened():
