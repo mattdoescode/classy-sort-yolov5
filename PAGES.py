@@ -181,15 +181,15 @@
 
 ####################
 
-# list1 = [90]
-# list2 = [90]
+list1 = [90]
+list2 = [90]
 
-list1 = [10,100,110,120]
-list2 = [10,100,110,120]
+# list1 = [120,10,100,110]
+# list2 = [10,100,110,120]
 
 class detectedObject():
     def __init__(self):
-        self.uniqueID = "Whatever"
+        self.uniqueID = None
         self.TopX1 = None
         self.TopY1 = None
         self.TopX2 = None
@@ -212,6 +212,7 @@ for item in list1:
     new = detectedObject()
     new.FrontIDNum = listID[-1]
     new.FrontX1 = item
+    new.uniqueID = str(len(frontList))+"front"
     listID.pop()
     frontList.append(new)
 
@@ -223,6 +224,7 @@ for item in list2:
     new = detectedObject()
     new.TopIDNum = listID2[-1]
     new.TopX1 = item
+    new.uniqueID = str(len(topList))+"top"
     listID2.pop()
     topList.append(new)
 
@@ -234,19 +236,21 @@ for item in list2:
 # #####################################
 
 finalizedIDs = []
-multiMatch = False
 
 def trackUniqueMatchedID(idToAdd):
     finalizedIDs.append(idToAdd)
 
+#if dup return False 
 def checkIfDuplicates():
+    if len(finalizedIDs) == 0:
+        return False
     setOfElems = set()
     for elem in finalizedIDs:
         if elem in setOfElems:
-            return True
+            return False
         else:
             setOfElems.add(elem)         
-    return False
+    return True
 
 #get all possible matches
 errorAcceptance = 75
@@ -254,68 +258,83 @@ errorAcceptance = 75
 #collection of all possible matches with distances
 allPossiblePairs = []
 
-#ignore all cases 
 if(len(topList) == len(frontList)):
-    #does it matter how we match? More results vs fewer
     for topItem in sorted(topList, key=lambda detectedObject: detectedObject.TopX1):
         for frontItem in sorted(frontList, key=lambda detectedObject: detectedObject.FrontX1):
             if abs(topItem.TopX1-frontItem.FrontX1) > errorAcceptance:
                 continue
             allPossiblePairs.append([topItem,frontItem,abs(topItem.TopX1-frontItem.FrontX1), None])
-    # print("pairs are:")
     # for possiblePair in allPossiblePairs:
     #     print(possiblePair[0].TopX1,possiblePair[1].FrontX1, possiblePair[2], possiblePair[3])
 
     #find matches
-    counter = 0
-    for i in range(len(allPossiblePairs[:-1])):
-        # allPossiblePairs = [x for x in allPossiblePairs if remove(x)]
+    if (len(allPossiblePairs) > 1):
+        counter = 0
+        for i in range(len(allPossiblePairs[:-1])):
+            # allPossiblePairs = [x for x in allPossiblePairs if remove(x)]
 
-        # records might have been processed in the while loop
-        # if so skip
-        if counter > 0:
-            counter = counter - 1
-            continue
-        #if only 1 match per 1 detection it must be a true match
-        if(allPossiblePairs[i][0] != allPossiblePairs[i+1][0]):
-            allPossiblePairs[i][3] = True
-            trackUniqueMatchedID(allPossiblePairs[i][0].TopIDNum)
-            trackUniqueMatchedID(allPossiblePairs[i][1].FrontIDNum)   
-        #if we have multiple detections
-        #determine what is best for the current detection
-        else:
-            counter = 1
-            bestDetection = i
-            #check if next index exists (IT ALWAYS WILL ON FIRST LOOP)
-            while len(allPossiblePairs) > i+counter:
-                #check if we need to process (WE ALWAYS WILL FIRST TIME)
-                if(allPossiblePairs[i][0] == allPossiblePairs[i+counter][0]):
-                    #if bestDetection is worse update bestDetection
-                    if(allPossiblePairs[bestDetection][2] > allPossiblePairs[i+counter][2]):
-                        bestDetection = i+counter
-                    counter = counter + 1
-                else:
-                    break
-            allPossiblePairs[bestDetection][3] = True
-            trackUniqueMatchedID(allPossiblePairs[bestDetection][0].TopIDNum)
-            trackUniqueMatchedID(allPossiblePairs[bestDetection][1].FrontIDNum)
-            
-    print("updated pairs are:")
-    for possiblePair in allPossiblePairs:
-        print(possiblePair[0].TopX1,possiblePair[1].FrontX1, possiblePair[2], possiblePair[3])
+            # records might have been processed in the while loop
+            # if so skip
+            if counter > 0:
+                counter = counter - 1
+                continue
+            #if only 1 match per 1 detection it must be a true match
+            if(allPossiblePairs[i][0] != allPossiblePairs[i+1][0]):
+                allPossiblePairs[i][3] = True
+                trackUniqueMatchedID(allPossiblePairs[i][0].TopIDNum)
+                trackUniqueMatchedID(allPossiblePairs[i][1].FrontIDNum)   
+            #if we have multiple detections
+            #determine what is best for the current detection
+            else:
+                counter = 1
+                bestDetection = i
+                #check if next index exists (IT ALWAYS WILL ON FIRST LOOP)
+                while len(allPossiblePairs) > i+counter:
+                    #check if we need to process (WE ALWAYS WILL FIRST TIME)
+                    if(allPossiblePairs[i][0] == allPossiblePairs[i+counter][0]):
+                        #if bestDetection is worse update bestDetection
+                        if(allPossiblePairs[bestDetection][2] > allPossiblePairs[i+counter][2]):
+                            bestDetection = i+counter
+                        counter = counter + 1
+                    else:
+                        break
+                allPossiblePairs[bestDetection][3] = True
+                trackUniqueMatchedID(allPossiblePairs[bestDetection][0].TopIDNum)
+                trackUniqueMatchedID(allPossiblePairs[bestDetection][1].FrontIDNum)
+    elif(len(allPossiblePairs) == 1):
+        #if only 1 match it must be a true match
+        allPossiblePairs[0][3] = True
+        trackUniqueMatchedID(allPossiblePairs[0][0].TopIDNum)
+        trackUniqueMatchedID(allPossiblePairs[0][1].FrontIDNum)   
+    else:
+        print('nothing to look at')
+        pass
+
+    # print("updated pairs are:")
+    # for possiblePair in allPossiblePairs:
+    #     print(possiblePair[0].TopX1,possiblePair[1].FrontX1, possiblePair[2], possiblePair[3])
     
-    print("unique items are")
-    for item in finalizedIDs:
-        print(item)
+    # print("unique items are")
+    # for item in finalizedIDs:
+    #     print(item)
+
+    # for possiblePair in allPossiblePairs:
+    #     if(possiblePair[3] == True):
+    #         print(possiblePair[0].uniqueID,possiblePair[0].TopX1, possiblePair[1].uniqueID, possiblePair[1].FrontX1)
+
+    if(not checkIfDuplicates()):
+        print("no valid pairs")
+    else:
+        validPairs = []
+        for possiblePair in allPossiblePairs:
+            if(possiblePair[3] == True):
+                validPairs.append(possiblePair)
+                
+        print("Valid detections: ", len(validPairs))
 
 else:
-    print("non matching # of detections.... waiting....")
+    print("non matching # of detections - skipping pairings")
 
-
-if(checkIfDuplicates()):
-    print("try again later")
-else:
-    print("all good hoss")
 
 
 # # # visitedPoints = []
