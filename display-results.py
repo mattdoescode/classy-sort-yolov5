@@ -69,13 +69,12 @@ def createTrackedObjectFromDBData(tableName, dbRecord):
     return currentTemp
 
 def animate(i, para):
+    #each detection saved as on object
     tempDetected = []
-    #how many frames of no detection before we delete
-    decayRate = None
-
+    
+    #get most recent detection data from each camera perspective
     for tableName in tableNames:
         try:
-            # get tracking results from newest frame
             query = """
                 SELECT * FROM "{}"
                 WHERE frame = (SELECT MAX(frame) FROM "{}")
@@ -84,7 +83,6 @@ def animate(i, para):
             values = cur.fetchall()
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
-
 
         # Matching results from the 2 camera feeds is complicated
         # lots of cases to consider (missing detections, fish 
@@ -95,80 +93,30 @@ def animate(i, para):
         #each DB record is 
         #recordID, frame#, x1, y1, x2, y2, detected object, sort item ID
 
-        
-        ######## MAKE FIRST INITIAL PAIRINGS
-
+        #if both cameras have == number of detections
         if tempDetected and len(tempDetected) == len(values):
-            #table view
-            currentTableView = getTableView(tableName)
+            #make temp records for second camera
+            #find pairings
+            #if valid pairings turn into final detections
+            #compare new detections with existing 
+            #draw updates
+            pass
     
-        #if tempItems is empty and we have results from DB
-        if not tempDetected and len(values) > 0:
-            #for each value from DB create new object and populate it based on camera perspective 
+        #when processing first camera
+        #turn detections into temp objects
+        elif not tempDetected and len(values) > 0:
             for dbRecord in values:
-                currentTemp = createTrackedObjectFromDBData(tableName, values)
+                currentTemp = createTrackedObjectFromDBData(tableName, dbRecord)
                 tempDetected.append(currentTemp)
         
-        #if we have tempitems and results from DB 
-        #we need to merge db results with what we have from the other table
-        elif tempDetected and len(values) > 0:
+        #when len of both detections != 
+        elif not tempDetected and len(values) == 0:
+            #this will result with an incomplete 3D record. 
             pass
-            #match temp detected & current DB results
-            #here we have 1 or more record from both cameras
-            #similarPosMaxDiff
-            if not activelyTracked:
-                pass
-            else: 
-                #merge with regards to atively tracked records
-                pass
 
+    #COMPARE temp records to existing records
+    ##### DO SOMETHING HERE
 
-
-            #use nearest neighbor algo 
-
-
-            #combining works (without references to past frames) by comparing the shared deminsion.
-            #we find detected objects that have the closest X deminsion location per camera.
-            #once objects from each camera are paired on the x we get the item # from the sort algo
-            #the item will then be paired by sort algo numbers
-            # if currectlyTracked:
-            #     #compare x locations
-            #     #case where result sets are different sizes
-                
-            #     #compareCompletedTemps with currectlyTracked
-            #     # update CurrentlyTracked
-            # else:
-            #     # output From combineTemps = currentlyTracked
-
-
-            # #if we currently have tracked objects we compare existing objects w/ their sort algo items. 
-            #     #if we have matching numbers we simply update the objects position
-            #     #if we have missmatch by id's
-            #         #if 1 missmatch id -> update the missing ID w/ new ID
-            #         #if multiple missmatch ids -> compare on shared X and update with saved item values 
-            # else:
-            #     print("need to combine and check currectly displayed")
-
-        #if tempitems and no results from DB
-        elif not tempDetected and len(values) <= 0:
-            print("missing information from 1 camera")
-        #if no tempitems and no results from DB
-        elif tempDetected and len(values) <= 0:
-            print("missing information from 1 camera")
-        
-        else:
-            print("something has gone horribly wrong.")
-            print("you should never be here")
-            sys.exit()
-
-    #find match in global detected objects 
-    #if no match can be found make new record
-
-    #cases
-    #0 temp records
-    #1 incomplete temp record
-    #n completed records with m incompleted records
-    print(tableName, values)
     # PLOT FISH
     #ax.scatter(x pos, y pos, z pos, s = size of plot point, label for legend)
 
