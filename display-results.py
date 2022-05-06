@@ -36,16 +36,6 @@ class detectedObject():
         self.frame = None
         self.sortID = None
 
-def getTableView(tableName):
-    if "top" in tableName or "TOP" in tableName or "Top" in tableName:
-        return "top"
-    elif "front" in tableName or "FRONT" in tableName or "Front" in tableName:
-        return "front"
-    else:
-        print("error detecting camera view")
-        print("table name w/ error is: ", tableName)
-        sys.exit("check DB table name")
-
 #create temp object + add properties based on camera perspective (3d)
 def createTrackedObjectFromDBData(tableName, dbRecord):
      #each DB record is 
@@ -73,6 +63,8 @@ def animate(i, para):
     secondTempDetected = [] 
     #potential parings
     allPossiblePairs = []
+    #do we have something?
+    validDetections = False
     #get most recent detection data from each camera perspective
     for tableName in tableNames:
         try:
@@ -103,13 +95,15 @@ def animate(i, para):
             #match on the similar x axis
             for firstItem in sorted(tempDetected, key=lambda detectedObject: ((detectedObject.X1 + detectedObject.X2)/2)):
                 for secondItem in sorted(secondTempDetected, key=lambda detectedObject: ((detectedObject.X1 + detectedObject.X2)/2)):
-                    if abs((detectedObject.X1 + detectedObject.X2)/2) > errorAcceptance:
+                    distance = abs(
+                                    (firstItem.X1 + firstItem.X2)/2 - (secondItem.X1 + secondItem.X2)/2
+                                  )
+                    if distance > errorAcceptance:
                         continue
+                    print('adding to all possible pairs')
                     allPossiblePairs.append([firstItem,
                                             secondItem,
-                                            abs(
-                                                (firstItem.X1 + firstItem.X2)/2 - (secondItem.X1 + secondItem.X2)/2
-                                            ), 
+                                            distance, 
                                             None])
             ###FIND THE BEST MATCHES
             #find matches
@@ -152,12 +146,13 @@ def animate(i, para):
                 allPossiblePairs[0][3] = True
                 finalizedIDs.append(allPossiblePairs[0][0].uniqueID)
                 finalizedIDs.append(allPossiblePairs[0][1].uniqueID)   
+                print("looking at the 1 case stuff")
             else:
                 print('nothing to look at')
                 pass
             
             #if valid pairings turn into final detections
-            validPairs = []
+            print("checking pairs I MADE IT HERE")
             validDetections = False
             for possiblePair in allPossiblePairs:
                 if(possiblePair[3] == True):
@@ -171,12 +166,15 @@ def animate(i, para):
                                 setOfElems.add(elem)   
                         #if all checks are passed we have valid detections      
                         validDetections = True
-            
+            #print detections
             if validDetections:            
-                print("Valid detections: ", len(validPairs))
+                print("Valid detections: ")
+                for possiblePair in allPossiblePairs:
+                    if(possiblePair[3] == True):
+                        print(possiblePair[0].uniqueID, possiblePair[1].uniqueID)
             else:
                 print("no valid pairs")
-    
+
             #compare new detections with existing 
             #draw updates
         
@@ -195,8 +193,7 @@ def animate(i, para):
         else:
             pass
 
-    #COMPARE temp records to existing records
-    
+
     ##### DO SOMETHING HERE
     # PLOT FISH
     #ax.scatter(x pos, y pos, z pos, s = size of plot point, label for legend)
@@ -290,7 +287,7 @@ if __name__ == '__main__':
     #starts main loop of the program -> animate function does it all 
     # ani = FuncAnimation(fig, animate, interval=1000)
     activelyTracked = []
-    ani = FuncAnimation(fig, animate, fargs=(tableNames,),interval=100)
+    ani = FuncAnimation(fig, animate, fargs=(tableNames,),interval=1000)
 
     #plt.tight_layout()
     plt.show()
