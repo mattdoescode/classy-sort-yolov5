@@ -29,6 +29,7 @@ from config import config
 class detectedObject():
     def __init__(self):
         self.uniqueID = None
+        self.perspective = None
         self.X1 = None
         self.Y1 = None
         self.X2 = None
@@ -36,15 +37,49 @@ class detectedObject():
         self.frame = None
         self.sortID = None
 
+class finalObject():
+    def __init__(self):
+        #self.uniqueID = None
+        self.frontFrame = None
+        self.topFrame = None
+        self.X1 = None
+        # self.X2 = None
+        self.Y1 = None
+        # self.Y2 = None
+        self.Z1 = None
+        # self.Z2 = None
+
+#take 2 matched perspectives for a fish 2 detectedObject
+#return finalobject object
+def mergeCameraDetections(view1,view2):
+    mergedObj = finalObject()
+    views = [view1,view2]
+    totalX = 0
+    for view in views:
+        if view.perspective == 'top':
+            mergedObj.Y1 = (view.Y1 + view.Y2) / 2
+            mergedObj.topFrame = view.frame
+        elif view.perspective == 'front':
+            mergedObj.Z1 = (view.Y1 + view.Y2) / 2
+            mergedObj.frontFrame = view.frame
+        totalX = totalX + view.X1
+        totalX = totalX + view.X2
+
+    mergedObj.X1 = totalX / 4
+
+    return mergedObj
+
 #create temp object + add properties based on camera perspective (3d)
 def createTrackedObjectFromDBData(tableName, dbRecord):
      #each DB record is 
         #recordID, frame#, x1, y1, x2, y2, detected object, sort item ID
     currentTemp = detectedObject()
     if "top" in tableName or "TOP" in tableName or "Top" in tableName:
-        currentTemp.uniqueID = str(dbRecord[0]) +"-top"
+        currentTemp.uniquIeD = str(dbRecord[0]) +"-top"
+        currentTemp.perspective = 'top'
     elif "front" in tableName or "FRONT" in tableName or "Front" in tableName:
         currentTemp.uniqueID = str(dbRecord[0]) +"-front"
+        currentTemp.perspective = 'front'
     else:
         print("ERROR - DB TABLE NAME REQUIRED TO HAVE 'FRONT' or 'TOP' in name")
         sys.exit()
@@ -100,7 +135,7 @@ def animate(i, para):
                                   )
                     if distance > errorAcceptance:
                         continue
-                    print('adding to all possible pairs')
+                    # print('adding to all possible pairs')
                     allPossiblePairs.append([firstItem,
                                             secondItem,
                                             distance, 
@@ -146,14 +181,11 @@ def animate(i, para):
                 allPossiblePairs[0][3] = True
                 finalizedIDs.append(allPossiblePairs[0][0].uniqueID)
                 finalizedIDs.append(allPossiblePairs[0][1].uniqueID)   
-                print("looking at the 1 case stuff")
+                # print("looking at the 1 case stuff")
             else:
-                print('nothing to look at')
                 pass
             
-            #if valid pairings turn into final detections
-            print("checking pairs I MADE IT HERE")
-            validDetections = False
+            #detect if detections have any duplictes
             for possiblePair in allPossiblePairs:
                 if(possiblePair[3] == True):
                         if len(finalizedIDs) == 0:
@@ -167,11 +199,19 @@ def animate(i, para):
                         #if all checks are passed we have valid detections      
                         validDetections = True
             #print detections
-            if validDetections:            
-                print("Valid detections: ")
+            if validDetections:           
+                # print("Valid detections: ")
                 for possiblePair in allPossiblePairs:
                     if(possiblePair[3] == True):
-                        print(possiblePair[0].uniqueID, possiblePair[1].uniqueID)
+                        activelyTracked.append(mergeCameraDetections(possiblePair[0],possiblePair[1]))
+
+                #if long does not exist: 
+                    #copy valid detections to longer term
+                #if long term exists:
+                    #compare results
+                    #create any new records if needed
+                    #update valid
+                pass
             else:
                 print("no valid pairs")
 
@@ -193,16 +233,31 @@ def animate(i, para):
         else:
             pass
 
+    #clear anything on the plot
+    plt.cla()
 
     ##### DO SOMETHING HERE
-    # PLOT FISH
+    #PLOT FISH
     #ax.scatter(x pos, y pos, z pos, s = size of plot point, label for legend)
+    # x = y = z = names = []
+    for permTracked in activelyTracked:
+        ax.scatter(float(permTracked.X1),float(permTracked.Y1),float(permTracked.Z1), s = 20, label = "massive")
+    #     print(permTracked.X1, permTracked.Y1, permTracked.Z1)
+    #     x.append(permTracked.X1)
+    #     y.append(permTracked.Y1)
+    #     z.append(permTracked.Z1)
+    #     name.append(permTracked.frontFrame)
+
+    # ax.scatter(x,y,z,s = 20, label = names)
+
+    
+    # print("plotting")
+    ax.scatter(100,100,100, s = 500, label = "massive")
 
     #invert axis
     # ax.invert_zaxis()
     # ax.invert_yaxis()
     # ax.invert_zaxis()
-    plt.cla()
     ax.axes.set_xlim3d(left=0, right=1000) 
     ax.axes.set_ylim3d(bottom=0, top=1000) 
     ax.axes.set_zlim3d(bottom=0, top=1000)
@@ -210,7 +265,7 @@ def animate(i, para):
     ax.set_ylabel('Y axis')
     ax.set_zlabel('Z axis')
     plt.legend(loc='upper left')
-    plt.tight_layout()
+    # plt.tight_layout()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Display location of fish + drive 'vr' display")
