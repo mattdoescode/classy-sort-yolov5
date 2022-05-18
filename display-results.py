@@ -39,7 +39,7 @@ class detectedObject():
 
 class finalObject():
     def __init__(self):
-        #self.uniqueID = None
+        self.uniqueID = None
         self.frontFrame = None
         self.topFrame = None
         self.X1 = None
@@ -66,6 +66,7 @@ def mergeCameraDetections(view1,view2):
         totalX = totalX + view.X2
 
     mergedObj.X1 = totalX / 4
+    mergedObj.uniqueID = views[0].uniqueID + " " + views[1].uniqueID
 
     return mergedObj
 
@@ -75,7 +76,7 @@ def createTrackedObjectFromDBData(tableName, dbRecord):
         #recordID, frame#, x1, y1, x2, y2, detected object, sort item ID
     currentTemp = detectedObject()
     if "top" in tableName or "TOP" in tableName or "Top" in tableName:
-        currentTemp.uniquIeD = str(dbRecord[0]) +"-top"
+        currentTemp.uniqueID = str(dbRecord[0]) +"-top"
         currentTemp.perspective = 'top'
     elif "front" in tableName or "FRONT" in tableName or "Front" in tableName:
         currentTemp.uniqueID = str(dbRecord[0]) +"-front"
@@ -121,11 +122,15 @@ def animate(i, para):
         #each DB record is 
         #recordID, frame#, x1, y1, x2, y2, detected object, sort item ID
 
+        #print DB results
+        # for result in values:
+        #     print(result)
+
         #if both cameras have == number of detections
         if tempDetected and len(tempDetected) == len(values):
             for dbRecord in values:
                 secondTempDetected.append(createTrackedObjectFromDBData(tableName, dbRecord))
-
+            
             #find pairings
             #match on the similar x axis
             for firstItem in sorted(tempDetected, key=lambda detectedObject: ((detectedObject.X1 + detectedObject.X2)/2)):
@@ -140,6 +145,11 @@ def animate(i, para):
                                             secondItem,
                                             distance, 
                                             None])
+            
+            # print('all possible pairs are')
+            # for pp in allPossiblePairs:
+            #     print(pp[0].uniqueID,pp[1].uniqueID,pp[2])
+
             ###FIND THE BEST MATCHES
             #find matches
             finalizedIDs = []
@@ -176,6 +186,14 @@ def animate(i, para):
                         allPossiblePairs[bestDetection][3] = True
                         finalizedIDs.append(allPossiblePairs[bestDetection][0].uniqueID)
                         finalizedIDs.append(allPossiblePairs[bestDetection][1].uniqueID)
+
+                #do something with the last result
+                # DOUBLE CHECK IF IS ACTAULLY THE SOULUTION
+                if allPossiblePairs[-1][0].uniqueID != allPossiblePairs[-2][0].uniqueID:
+                        allPossiblePairs[-1][3] = True
+                        finalizedIDs.append(allPossiblePairs[-1][0].uniqueID)
+                        finalizedIDs.append(allPossiblePairs[-1][1].uniqueID)   
+
             elif(len(allPossiblePairs) == 1):
                 #if only 1 match it must be a true match
                 allPossiblePairs[0][3] = True
@@ -199,10 +217,11 @@ def animate(i, para):
                         #if all checks are passed we have valid detections      
                         validDetections = True
             #print detections
-            if validDetections:           
-                # print("Valid detections: ")
+            if validDetections:
+                activelyTracked = []  
                 for possiblePair in allPossiblePairs:
                     if(possiblePair[3] == True):
+                        #compare detection with list of existing
                         activelyTracked.append(mergeCameraDetections(possiblePair[0],possiblePair[1]))
 
                 #if long does not exist: 
@@ -239,20 +258,10 @@ def animate(i, para):
     ##### DO SOMETHING HERE
     #PLOT FISH
     #ax.scatter(x pos, y pos, z pos, s = size of plot point, label for legend)
-    # x = y = z = names = []
-    for permTracked in activelyTracked:
-        ax.scatter(float(permTracked.X1),float(permTracked.Y1),float(permTracked.Z1), s = 20, label = "massive")
-    #     print(permTracked.X1, permTracked.Y1, permTracked.Z1)
-    #     x.append(permTracked.X1)
-    #     y.append(permTracked.Y1)
-    #     z.append(permTracked.Z1)
-    #     name.append(permTracked.frontFrame)
-
-    # ax.scatter(x,y,z,s = 20, label = names)
-
-    
-    # print("plotting")
-    ax.scatter(100,100,100, s = 500, label = "massive")
+    if activelyTracked:
+        print(len(activelyTracked), "records")
+        for permTracked in activelyTracked:
+            ax.scatter(float(permTracked.X1),float(permTracked.Y1),float(permTracked.Z1), s = 400, label = permTracked.uniqueID)
 
     #invert axis
     # ax.invert_zaxis()
@@ -342,7 +351,7 @@ if __name__ == '__main__':
     #starts main loop of the program -> animate function does it all 
     # ani = FuncAnimation(fig, animate, interval=1000)
     activelyTracked = []
-    ani = FuncAnimation(fig, animate, fargs=(tableNames,),interval=1000)
+    ani = FuncAnimation(fig, animate, fargs=(tableNames,),interval=10000)
 
     #plt.tight_layout()
     plt.show()
