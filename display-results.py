@@ -8,6 +8,7 @@ on this. Subsequent pairings (tracking) is done via the ID's given from YOLO out
 """
 
 errorAcceptance = 75
+activelyTracked = []
 
 #camera 0 - front facing camera - captures x,y - globally -> x,z
 #camera 1 - top facing camera - captures x,y - globally -> x,y
@@ -40,6 +41,8 @@ class detectedObject():
 class finalObject():
     def __init__(self):
         self.uniqueID = None
+        self.topID = None
+        self.frontID = None
         self.frontFrame = None
         self.topFrame = None
         self.X1 = None
@@ -48,6 +51,9 @@ class finalObject():
         # self.Y2 = None
         self.Z1 = None
         # self.Z2 = None
+        self.topSortID = None
+        self.frontSortID = None
+        self.age = 0
 
 #take 2 matched perspectives for a fish 2 detectedObject
 #return finalobject object
@@ -59,14 +65,19 @@ def mergeCameraDetections(view1,view2):
         if view.perspective == 'top':
             mergedObj.Y1 = (view.Y1 + view.Y2) / 2
             mergedObj.topFrame = view.frame
+            mergedObj.topID = view.uniqueID
+            mergedObj.topSortID = view.sortID
         elif view.perspective == 'front':
             mergedObj.Z1 = (view.Y1 + view.Y2) / 2
             mergedObj.frontFrame = view.frame
+            mergedObj.frontID = view.uniqueID
+            mergedObj.frontSortID = view.sortID
         totalX = totalX + view.X1
         totalX = totalX + view.X2
 
     mergedObj.X1 = totalX / 4
     mergedObj.uniqueID = views[0].uniqueID + " " + views[1].uniqueID
+
 
     return mergedObj
 
@@ -200,6 +211,7 @@ def animate(i, para):
                 finalizedIDs.append(allPossiblePairs[0][0].uniqueID)
                 finalizedIDs.append(allPossiblePairs[0][1].uniqueID)   
                 # print("looking at the 1 case stuff")
+            #all possible pairs = 0
             else:
                 pass
             
@@ -216,21 +228,52 @@ def animate(i, para):
                                 setOfElems.add(elem)   
                         #if all checks are passed we have valid detections      
                         validDetections = True
-            #print detections
+            
+            #if we have valid detections
+            mergedRecordsToCompareToActivelyTracked = []  
             if validDetections:
-                activelyTracked = []  
                 for possiblePair in allPossiblePairs:
                     if(possiblePair[3] == True):
-                        #compare detection with list of existing
-                        activelyTracked.append(mergeCameraDetections(possiblePair[0],possiblePair[1]))
+                        #combine results
+                        mergedRecordsToCompareToActivelyTracked.append(mergeCameraDetections(possiblePair[0],possiblePair[1]))
+                mergedRecordsToCompareToActivelyTracked = sorted(mergedRecordsToCompareToActivelyTracked, key=lambda x: x.topSortID)
+                #compare new records with previously existing records
+                #compare existing ID's to 
+                
+                #if we have perm records
+                    # we need to merge
+                #else
+                    #perm == temp
+                if 'activelyTracked' in vars():
 
-                #if long does not exist: 
-                    #copy valid detections to longer term
-                #if long term exists:
-                    #compare results
-                    #create any new records if needed
-                    #update valid
-                pass
+                    #merge perfectly matching records
+
+                    list1Pointer = list2Pointer = 0
+                    #temp records are sorted by topSortID
+                    #adding directly to perm storage should always result in a sorted record?
+                    while len(mergedRecordsToCompareToActivelyTracked) != list1Pointer and len(activelyTracked) != list2Pointer:
+                        if(mergedRecordsToCompareToActivelyTracked[list1Pointer][0] == activelyTracked[list2Pointer][0] and mergedRecordsToCompareToActivelyTracked[list1Pointer][1] == activelyTracked[list2Pointer][1]):
+                            activelyTracked[list2Pointer][2] = mergedRecordsToCompareToActivelyTracked[list1Pointer][2]
+                            print("match")
+                            list2Pointer = list2Pointer + 1
+                            mergedRecordsToCompareToActivelyTracked.pop(list1Pointer)
+                            continue
+                        #check which pointer has highest value
+                        #increment the other
+                        if mergedRecordsToCompareToActivelyTracked[list1Pointer][0] < activelyTracked[list2Pointer][0]:
+                            list1Pointer = list1Pointer + 1
+                        else:
+                            list2Pointer = list2Pointer + 1
+
+                    #if long does not exist: 
+                        #copy valid detections to longer term
+                    #if long term exists:
+                        #compare results
+                        #create any new records if needed
+                        #update valid
+                        
+                else:
+                    activelyTracked = mergedRecordsToCompareToActivelyTracked
             else:
                 print("no valid pairs")
 
@@ -259,8 +302,9 @@ def animate(i, para):
     #PLOT FISH
     #ax.scatter(x pos, y pos, z pos, s = size of plot point, label for legend)
     if activelyTracked:
-        print(len(activelyTracked), "records")
+        # print(len(activelyTracked), "records")
         for permTracked in activelyTracked:
+            #average this out (2 points per cord)
             ax.scatter(float(permTracked.X1),float(permTracked.Y1),float(permTracked.Z1), s = 400, label = permTracked.uniqueID)
 
     #invert axis
@@ -350,8 +394,7 @@ if __name__ == '__main__':
 
     #starts main loop of the program -> animate function does it all 
     # ani = FuncAnimation(fig, animate, interval=1000)
-    activelyTracked = []
-    ani = FuncAnimation(fig, animate, fargs=(tableNames,),interval=10000)
+    ani = FuncAnimation(fig, animate, fargs=(tableNames,),interval=100)
 
     #plt.tight_layout()
     plt.show()
