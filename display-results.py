@@ -9,6 +9,7 @@ on this. Subsequent pairings (tracking) is done via the ID's given from YOLO out
 
 errorAcceptance = 75
 activelyTracked = []
+sortAlgoMaxFrameAge = 10
 
 #camera 0 - front facing camera - captures x,y - globally -> x,z
 #camera 1 - top facing camera - captures x,y - globally -> x,y
@@ -245,16 +246,16 @@ def animate(i, para):
                 #else
                     #perm == temp
                 if 'activelyTracked' in vars():
-
                     #merge perfectly matching records
-
+                    #list1 = new 
+                    #list2 = existing
                     list1Pointer = list2Pointer = 0
                     #temp records are sorted by topSortID
                     #adding directly to perm storage should always result in a sorted record?
                     while len(mergedRecordsToCompareToActivelyTracked) != list1Pointer and len(activelyTracked) != list2Pointer:
                         if(mergedRecordsToCompareToActivelyTracked[list1Pointer][0] == activelyTracked[list2Pointer][0] and mergedRecordsToCompareToActivelyTracked[list1Pointer][1] == activelyTracked[list2Pointer][1]):
                             activelyTracked[list2Pointer][2] = mergedRecordsToCompareToActivelyTracked[list1Pointer][2]
-                            print("match")
+                            # print("match")
                             list2Pointer = list2Pointer + 1
                             mergedRecordsToCompareToActivelyTracked.pop(list1Pointer)
                             continue
@@ -264,20 +265,33 @@ def animate(i, para):
                             list1Pointer = list1Pointer + 1
                         else:
                             list2Pointer = list2Pointer + 1
-
-                    #if long does not exist: 
-                        #copy valid detections to longer term
-                    #if long term exists:
-                        #compare results
-                        #create any new records if needed
-                        #update valid
+                    
+                    list1Pointer = 0
+                    partMatchPointerNum = 0
+                    while len(mergedRecordsToCompareToActivelyTracked) >= list1Pointer:
+                        view1Match = view2Match = False
+                        for i in range(len(activelyTracked)):
+                            if(mergedRecordsToCompareToActivelyTracked[list1Pointer][0] == activelyTracked[i][0]):
+                                view1Match = True
+                                partMatchPointerNum = i
+                            elif(mergedRecordsToCompareToActivelyTracked[list1Pointer][1] == activelyTracked[i][1]):
+                                view2Match = True
+                                partMatchPointerNum = i
+                        if(view1Match == False and view2Match == False):
+                            activelyTracked.append(mergedRecordsToCompareToActivelyTracked.pop(list1Pointer))
+                            continue
+                        if(view1Match or view2Match):
+                            activelyTracked[partMatchPointerNum] = mergedRecordsToCompareToActivelyTracked.pop(list1Pointer)
                         
+                        list1Pointer = list1Pointer + 1
+
+
                 else:
                     activelyTracked = mergedRecordsToCompareToActivelyTracked
             else:
                 print("no valid pairs")
 
-            #compare new detections with existing 
+            #compare new detections with existing  
             #draw updates
         
         #when processing first camera
@@ -290,6 +304,7 @@ def animate(i, para):
         #first camera has 0 results
         elif not tempDetected and len(values) == 0:
             #this will result with an incomplete 3D record. 
+            #we could update with just a single record... but we won't
             pass
         #every other case do nothing
         else:
