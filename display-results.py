@@ -243,22 +243,28 @@ def animate(i, para):
                 mergedRecordsToCompareToActivelyTracked = sorted(mergedRecordsToCompareToActivelyTracked, key=lambda x: x.topSortID)
                 #compare new records with previously existing records
                 #compare existing ID's to 
-        
+    
+                """
+                    ALL RECORDS AT THIS POINT ARE PAIRED BASED ON AN AVERAGED SHARED X
+
+                    # TO DO AGE RECORDS AND DELETE WHEN TOO OLD
+                """
                 #compare new records to records from the last frame
+                #pair records based on their SORTID 
                 if 'activelyTracked' in vars():
                     list1Pointer = list2Pointer = 0
                     #temp records are sorted by topSortID
-                    #adding directly to perm storage should always result in a sorted record?
+                    #adding directly to perm storage should always result in a sorted record? (double check this)
                     while len(mergedRecordsToCompareToActivelyTracked) != list1Pointer and len(activelyTracked) != list2Pointer:
-                        if(mergedRecordsToCompareToActivelyTracked[list1Pointer][0] == activelyTracked[list2Pointer][0] and mergedRecordsToCompareToActivelyTracked[list1Pointer][1] == activelyTracked[list2Pointer][1]):
-                            activelyTracked[list2Pointer][2] = mergedRecordsToCompareToActivelyTracked[list1Pointer][2]
+                        if(mergedRecordsToCompareToActivelyTracked[list1Pointer].topSortID == activelyTracked[list2Pointer].topSortID and mergedRecordsToCompareToActivelyTracked[list1Pointer].frontSortID == activelyTracked[list2Pointer].frontSortID):
+                            activelyTracked[list2Pointer] = mergedRecordsToCompareToActivelyTracked[list1Pointer]
                             # print("match")
                             list2Pointer = list2Pointer + 1
                             mergedRecordsToCompareToActivelyTracked.pop(list1Pointer)
                             continue
                         #check which pointer has highest value
                         #increment the other
-                        if mergedRecordsToCompareToActivelyTracked[list1Pointer][0] < activelyTracked[list2Pointer][0]:
+                        if mergedRecordsToCompareToActivelyTracked[list1Pointer].topSortID < activelyTracked[list2Pointer].topSortID:
                             list1Pointer = list1Pointer + 1
                         else:
                             list2Pointer = list2Pointer + 1
@@ -268,10 +274,10 @@ def animate(i, para):
                     while len(mergedRecordsToCompareToActivelyTracked) >= list1Pointer:
                         view1Match = view2Match = False
                         for i in range(len(activelyTracked)):
-                            if(mergedRecordsToCompareToActivelyTracked[list1Pointer][0] == activelyTracked[i][0]):
+                            if(mergedRecordsToCompareToActivelyTracked[list1Pointer].topSortID == activelyTracked[i].topSortID):
                                 view1Match = True
                                 partMatchPointerNum = i
-                            elif(mergedRecordsToCompareToActivelyTracked[list1Pointer][1] == activelyTracked[i][1]):
+                            elif(mergedRecordsToCompareToActivelyTracked[list1Pointer].frontSortID == activelyTracked[i].frontSortID):
                                 view2Match = True
                                 partMatchPointerNum = i
                         if(view1Match == False and view2Match == False):
@@ -308,7 +314,6 @@ def animate(i, para):
     #clear anything on the plot
     plt.cla()
 
-    ##### DO SOMETHING HERE
     #PLOT FISH
     #ax.scatter(x pos, y pos, z pos, s = size of plot point, label for legend)
     if activelyTracked:
