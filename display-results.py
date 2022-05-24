@@ -287,6 +287,14 @@ def animate(i, para):
                             activelyTracked[partMatchPointerNum] = mergedRecordsToCompareToActivelyTracked.pop(list1Pointer)
                         
                         list1Pointer = list1Pointer + 1
+                    
+                    listPointer = 0
+                    while(len(activelyTracked) != listPointer):
+                        if(activelyTracked.age >= sortAlgoMaxFrameAge):
+                            activelyTracked[listPointer].pop()
+                            print("deleted record without match for", sortAlgoMaxFrameAge, "frames")
+                        else:
+                            listPointer = listPointer + 1
                 else:
                     activelyTracked = mergedRecordsToCompareToActivelyTracked
             else:
