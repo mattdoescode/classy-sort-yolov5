@@ -47,11 +47,11 @@ class finalObject():
         self.frontFrame = None
         self.topFrame = None
         self.X1 = None
-        # self.X2 = None
+        self.X2 = None
         self.Y1 = None
-        # self.Y2 = None
+        self.Y2 = None
         self.Z1 = None
-        # self.Z2 = None
+        self.Z2 = None
         self.topSortID = None
         self.frontSortID = None
         self.age = 0
@@ -61,22 +61,25 @@ class finalObject():
 def mergeCameraDetections(view1,view2):
     mergedObj = finalObject()
     views = [view1,view2]
-    totalX = 0
+    x1 = x2 = 0
     for view in views:
         if view.perspective == 'top':
-            mergedObj.Y1 = (view.Y1 + view.Y2) / 2
+            mergedObj.Y1 = view.Y1
+            mergedObj.Y2 = view.Y2
             mergedObj.topFrame = view.frame
             mergedObj.topID = view.uniqueID
             mergedObj.topSortID = view.sortID
         elif view.perspective == 'front':
-            mergedObj.Z1 = (view.Y1 + view.Y2) / 2
+            mergedObj.Z1 = view.Y1
+            mergedObj.Z2 = view.Y2
             mergedObj.frontFrame = view.frame
             mergedObj.frontID = view.uniqueID
             mergedObj.frontSortID = view.sortID
-        totalX = totalX + view.X1
-        totalX = totalX + view.X2
+        x1 = x1 + view.X1
+        x2 = x2 + view.X2
 
-    mergedObj.X1 = totalX / 4
+    mergedObj.X1 = x1/2
+    mergedObj.X2 = x2/2
     mergedObj.uniqueID = views[0].uniqueID + " " + views[1].uniqueID
 
 
@@ -227,7 +230,7 @@ def animate(i, para):
                                 break
                             else:
                                 setOfElems.add(elem)   
-                        #if all checks are passed we have valid detections      
+                        #if all checks are passed we have valid detections
                         validDetections = True
             
             #if we have valid detections
@@ -240,15 +243,9 @@ def animate(i, para):
                 mergedRecordsToCompareToActivelyTracked = sorted(mergedRecordsToCompareToActivelyTracked, key=lambda x: x.topSortID)
                 #compare new records with previously existing records
                 #compare existing ID's to 
-                
-                #if we have perm records
-                    # we need to merge
-                #else
-                    #perm == temp
+        
+                #compare new records to records from the last frame
                 if 'activelyTracked' in vars():
-                    #merge perfectly matching records
-                    #list1 = new 
-                    #list2 = existing
                     list1Pointer = list2Pointer = 0
                     #temp records are sorted by topSortID
                     #adding directly to perm storage should always result in a sorted record?
@@ -284,12 +281,10 @@ def animate(i, para):
                             activelyTracked[partMatchPointerNum] = mergedRecordsToCompareToActivelyTracked.pop(list1Pointer)
                         
                         list1Pointer = list1Pointer + 1
-
-
                 else:
                     activelyTracked = mergedRecordsToCompareToActivelyTracked
             else:
-                print("no valid pairs")
+                print("something is wrong with detection data")
 
             #compare new detections with existing  
             #draw updates

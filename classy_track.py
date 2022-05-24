@@ -255,7 +255,7 @@ def detect(opt, *args):
 
     print("sleeping for 20 seconds before starting")
     print("ensure settings are correct... ")
-    time.sleep(20)
+    time.sleep(10)
 
     ######
         #PROCESSING EACH FRAME HERE
