@@ -108,6 +108,8 @@ def createTrackedObjectFromDBData(tableName, dbRecord):
     return currentTemp
 
 def animate(i, para):
+    screen.fill((255,0,0))
+    pygame.display.flip()
     #each detection saved as on object
     tempDetected = []
     #make temp records for second camera
@@ -414,6 +416,10 @@ if __name__ == '__main__':
     fig = plt.figure(figsize=(10,10))
     ax = fig.add_subplot(111, projection='3d')
     ax.view_init(azim = -104, elev = 28)
+
+    import pygame
+    pygame.init()
+    screen = pygame.display.set_mode((2560,1440))
 
     #starts main loop of the program -> animate function does it all 
     # ani = FuncAnimation(fig, animate, interval=1000)
