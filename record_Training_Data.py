@@ -18,6 +18,11 @@ import os
 import cv2
 from datetime import datetime
 
+
+# import subprocess
+
+# subprocess.call(['c:/Users/matt2/Desktop/classy-sort-yolov5-MINE/fish-project-interpreter/Scripts/python.exe', 'display-results.py'])
+
 filename = 'video.avi'
 frames_per_second = 30
 res = '720p'
@@ -92,30 +97,32 @@ def get_video_type(filename):
     return VIDEO_TYPE['avi']
 
 class captureThread(threading.Thread):
-    def __init__(self, name, cameraID, theTime, correction_points):
+    def __init__(self, name, cameraID, theTime, correction_points = [], to_scale_points = []):
         threading.Thread.__init__(self)
         self.name = name
         self.cameraID = cameraID
         self.time = theTime
         self.correction_points = correction_points
-        #scaled output points in the order of TL,TR,BR,BL
-        self.tank_points = [[0,0],[1280,0],[1280, 798], [0,798]] 
+        self.to_scale_points = to_scale_points
+        # #scaled output points in the order of TL,TR,BR,BL
+        # self.tank_points = [[0,0],[1280,0],[1280, 798], [0,798]] 
         #calculation for correction-matrix
-        self.correction_matrix = cv2.getPerspectiveTransform(np.float32(self.correction_points), 
-                                                            np.float32(self.tank_points))
+        if( correction_points != []):
+            self.correction_matrix = cv2.getPerspectiveTransform(np.float32(self.correction_points), 
+                                                                np.float32(self.to_scale_points))
 
     def run(self):
         basefolder = "RAW-FOOTAGE"
         runfolder = basefolder+"\\" + self.time
-        if self.name == "Top-facing-Camera":
+        if self.name == "side-facing-Camera":
             make_dir(runfolder)
         outPut = runfolder + "\\camera-"+str(self.name) +"-at-"+ str(self.time)
-        outPutConverted = runfolder + "\\converted-"+str(self.name) +"-at-"+ str(self.time)
+        # outPutConverted = runfolder + "\\converted-"+str(self.name) +"-at-"+ str(self.time)
 
         #try to manually set resolution + fps
         cap = cv2.VideoCapture(self.cameraID)
-        cap.set(3, 1280)
-        cap.set(4, 720)
+        cap.set(3, 640)
+        cap.set(4, 480)
         cap.set(5, 30)
 
         # print('video out - trying to set')
@@ -124,8 +131,10 @@ class captureThread(threading.Thread):
         # fps = cap.get(cv2.CAP_PROP_FPS)
         # print(self.name, "is running at resolution:", width, "x", height, "at", fps, "fps")
 
-        out = cv2.VideoWriter(outPut+".mp4", cv2.VideoWriter_fourcc(*'MP4V'), cap.get(cv2.CAP_PROP_FPS), (1280,720))
-        outConverted = cv2.VideoWriter(outPutConverted+".avi", get_video_type(filename), cap.get(cv2.CAP_PROP_FPS), (1920,1197))
+
+        #change things here? 
+        out = cv2.VideoWriter(outPut+".mp4", cv2.VideoWriter_fourcc(*'MP4V'), cap.get(cv2.CAP_PROP_FPS), (640,480))
+        # outConverted = cv2.VideoWriter(outPutConverted+".avi", get_video_type(filename), cap.get(cv2.CAP_PROP_FPS), (640,480))
 
         # print('video out - ACTUALLY')
         # width  = cap.get(cv2.CAP_PROP_FRAME_WIDTH)   # float `width`
@@ -146,11 +155,11 @@ class captureThread(threading.Thread):
             cv2.imwrite(outputLocation+"\\"+str(currentFrame)+".jpg",frame)
 
             #apply matrix to new frame
-            result = cv2.warpPerspective(frame, self.correction_matrix,(1920,1197))
+            # result = cv2.warpPerspective(frame, self.correction_matrix,(640,720))
             
-            outConverted.write(result)
+            # outConverted.write(result)
             #show frames
-            cv2.imshow('conversion-'+self.name, result) # Transformed Capture
+            # cv2.imshow('conversion-'+self.name, result) # Transformed Capture
             cv2.imshow(self.name,frame)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -179,9 +188,8 @@ class getPoints(threading.Thread):
     def run(self):
         cap = cv2.VideoCapture(self.camID)
 
-        #manually set 1080p @ 30fps
-        cap.set(3, 1280)
-        cap.set(4, 720)
+        cap.set(3, 640)
+        cap.set(4, 480)
         cap.set(5, 30)
 
         print("capture points")
@@ -215,22 +223,25 @@ class getPoints(threading.Thread):
 
 runTime = str(datetime.today().replace(microsecond=0)).replace(":","-")
 
-front_points_tread = getPoints("front", 0)
-top_points_thread = getPoints("top", 1)
+# front_points_tread = getPoints("front", 0)
+# side_points_thread = getPoints("side", 1)
 
-front_points_tread.start()
-top_points_thread.start()
+# front_points_tread.start()
+# side_points_thread.start()
 
 #wait for collection of all points 
-front_points_tread.join()
-top_points_thread.join()
+# front_points_tread.join()
+# side_points_thread.join()
 
 #once we have all points start recording 
 #we are recording 2 raw captures, 2 edited captures, series of stills
-front_capture_thread = captureThread("Front-facing-Camera", front_points_tread.returnCameraID(), 
-                                runTime, front_points_tread.returnPoints())
-top_capture_thread = captureThread("Top-facing-Camera", top_points_thread.returnCameraID(), 
-                                runTime, top_points_thread.returnPoints())
+# front_capture_thread = captureThread("Front-facing-Camera", front_points_tread.returnCameraID(), 
+#                                 runTime, front_points_tread.returnPoints(), ([0,0],[1280,0],[1280, 798], [0,798]))
+# side_capture_thread = captureThread("side-facing-Camera", side_points_thread.returnCameraID(), 
+#                                 runTime, side_points_thread.returnPoints(), (None))
 
+
+front_capture_thread = captureThread("front-facing-Camera", 0, runTime)
+side_capture_thread = captureThread("side-facing-Camera", 1, runTime)
 front_capture_thread.start()
-top_capture_thread.start()
+side_capture_thread.start()

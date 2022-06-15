@@ -1,3 +1,5 @@
+# https://stackoverflow.com/questions/57399915/how-do-i-determine-the-locations-of-the-points-after-perspective-transform-in-t
+
 """
     IMPORTANT THINGS:
 
@@ -110,7 +112,6 @@ def connect(tableName):
     return cur
     
 def insertRecordDB(cur, tableName, data):
-
     statement = """INSERT INTO "{}"
     (frame, bbox_x1,
             bbox_y1,
@@ -172,7 +173,7 @@ def draw_boxes(img, bbox, identities=None, categories=None, names=None, offset=(
             img, (x1, y1+(y2-y1)), (x1 + t_size[0] + 3, y1 + t_size[1] + 4 + (y2-y1)), color, -1)
         #
         cv2.putText(img, label, (x1, y1 +
-                                 t_size[1] + 4 + (y2-y1)), cv2.FONT_HERSHEY_PLAIN, 1, [255, 255, 255], 1)
+                                    t_size[1] + 4 + (y2-y1)), cv2.FONT_HERSHEY_PLAIN, 1, [255, 255, 255], 1)
     return img
 
 def detect(opt, *args):
@@ -207,6 +208,10 @@ def detect(opt, *args):
         view_img = True
         cudnn.benchmark = True  # set True to speed up constant image size inference
         dataset = LoadStreams(source, img_size=imgsz)
+        perspectiveName = "front" if '0' == source else "side"
+        tableName = os.path.split(out)[1] + "-" + perspectiveName
+        print("table name is", tableName)
+        print("source is ", source)
     else:
         dataset = LoadImages(source, img_size=imgsz)
 
@@ -215,24 +220,17 @@ def detect(opt, *args):
         # source = filename without .avi 
         source = source[lastDir+1:-4]
 
-        print("PROCESSING SAVED FILE FROM CAMERA PERSPECTIVE: ")
-        if "front" in source:
-            source = source+"-2"
-            print("front")
-        elif "top" in source:
-            source = source+"-3"
-            print("top")
-        else:
-            print("ERROR recognizing - video file")
-            print("if video is front facing file name must contain 'front'")
-            print("if video is top facing file name must contain 'top'")
-            sys.exit()
+        print("source is ", source)
+        print("PROCESSING SAVED FILE")
+        # source = "FROM-FILE-" + source
+
+        tableName = os.path.split(out)[1] + "-" + source
 
         print("VIDEO FILE SOURCE IS: ", os.path.abspath(source))
     
     # get names of object categories from yolov5.pt model
     names = model.module.names if hasattr(model, 'module') else model.names 
-    
+
     # Run inference
     t0 = time.time()
     img = torch.zeros((1,3,imgsz,imgsz), device=device) #init img
@@ -244,16 +242,13 @@ def detect(opt, *args):
     txt_path = str(Path(out))+'/results.txt'
     print("OUTPUT FILES WILL BE SAVED TO: ", os.path.abspath(save_path))
 
-    tableName = os.path.split(out)[1] + "-" + str(source)
+
     cur = connect(tableName)
 
     #could do perspective transformation stuff here
     # if perspective_transformation:
-    #     print("changing")
-    # else:
-    #     print("not changing nothing")
 
-    print("sleeping for 20 seconds before starting")
+    print("sleeping for 10 seconds before starting")
     print("ensure settings are correct... ")
     time.sleep(10)
 
@@ -333,8 +328,8 @@ def detect(opt, *args):
                     
                     with open(txt_path, 'a') as f:
                         f.write(f'{frame_idx},{bbox_x1},{bbox_y1},{bbox_x2},{bbox_y2},{category},{u_overdot},{v_overdot},{s_overdot},{identity}\n')
-                
-                    insertRecordDB(cur,tableName, [frame_idx, bbox_x1,bbox_y1,bbox_x2,bbox_y2,category, identity])
+                    
+                    insertRecordDB(cur,tableName, [frame_idx, bbox_x1,bbox_y1,bbox_x2,bbox_y2,category,identity])
 
             print(f'{s} Done. ({t2-t1})')    
             # Stream image results(opencv)
@@ -378,14 +373,14 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str,
-                        default='C:\\Users\\matt2\\Desktop\\NON-mod-CLASSSY\\classy-sort-yolov5-main\\best.pt', help='model.pt path')
+                        default='C:\\Users\\matt2\\Desktop\\classy-sort-yolov5-MINE\\runs\\train\\exp15\\weights\\last.pt', help='model.pt path')
     # file/folder, 0 for webcam
     # file_location = "C:\Users\matt2\Desktop\working-camera\RAW-FOOTAGE\2021-12-07 16-07-34\camera-one-at-2021-12-07 16-07-34.avi"
     # file_location = file_location.replace('\\','/')
 
-    parser.add_argument('--source', type=str, default='C:\\Users\\matt2\\Desktop\\Fish videos - final cuts\\1 yellow zebra fish\\1-front.avi', help='source')
-    # parser.add_argument('--source', type=str,
-    #                     default="0", help='source')
+    #parser.add_argument('--source', type=str, default='C:\\Users\\matt2\\Desktop\\Fish videos - final cuts\\1 yellow zebra fish\\1-front.avi', help='source')
+    parser.add_argument('--source', type=str,
+                        default="1", help='source')
 
     parser.add_argument('--output', type=str, default='inference/processed-videos/'+str(datetime.today().replace(microsecond=0)).replace(":","_").replace(" ","_"),
                         help='output folder')  # output folder
@@ -407,6 +402,7 @@ if __name__ == '__main__':
                         default="True", help='save video file to output folder (disable for speed)')
     parser.add_argument('--save-txt', action='store_true',
                         help='save results to *.txt', default="True")
+    # for number of classes trained with 
     parser.add_argument('--classes', nargs='+', type=int,
                         default=[i for i in range(2)], help='filter by class') #80 classes in COCO dataset
     parser.add_argument('--agnostic-nms', action='store_true',
@@ -416,7 +412,7 @@ if __name__ == '__main__':
     parser.add_argument('--perspective-transformation', default="True")
 
     #SORT params
-    parser.add_argument('--sort-max-age', type=int, default=5,
+    parser.add_argument('--sort-max-age', type=int, default=10,
                         help='keep track of object even if object is occluded or not detected in n frames')
     parser.add_argument('--sort-min-hits', type=int, default=2,
                         help='start tracking only after n number of objects detected')

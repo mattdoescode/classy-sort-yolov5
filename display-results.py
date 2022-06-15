@@ -108,7 +108,7 @@ def createTrackedObjectFromDBData(tableName, dbRecord):
     return currentTemp
 
 def animate(i, para):
-    screen.fill((255,0,0))
+    screen.fill((0,0,0))
     pygame.display.flip()
     #each detection saved as on object
     tempDetected = []
