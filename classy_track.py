@@ -1,5 +1,4 @@
 # https://stackoverflow.com/questions/57399915/how-do-i-determine-the-locations-of-the-points-after-perspective-transform-in-t
-# apparant size / angualar size
 
 """
     IMPORTANT THINGS:
@@ -177,34 +176,6 @@ def draw_boxes(img, bbox, identities=None, categories=None, names=None, offset=(
                                     t_size[1] + 4 + (y2-y1)), cv2.FONT_HERSHEY_PLAIN, 1, [255, 255, 255], 1)
     return img
 
-def drawPoints(saved_points,frame):
-    for points in saved_points: 
-        cv2.circle(frame, (points[0],points[1]), 5, (0,255),5)
-
-def connectPoints(saved_points, frame):
-    previous = []
-    first = []
-    for point in saved_points:
-        if not previous and not first:
-            first = point
-            previous = point
-            continue
-        
-        #last point draws to the first 
-        #last point draws to second last visited
-        if saved_points[-1] == point:
-            cv2.line(frame,[point[0],point[1]],[first[0],first[1]],(0,200,0),3)
-            cv2.line(frame,[previous[0],previous[1]],[point[0],point[1]],(0,200,0),3)
-        else:
-            cv2.line(frame,[previous[0],previous[1]],[point[0],point[1]],(0,200,0),3)
-        previous = point
-    previous = []
-
-savedMousePoints = []
-def mousePoints(event,x,y,flags,params):
-    if event == cv2.EVENT_LBUTTONDOWN:
-        savedMousePoints.append([x,y])
-
 def detect(opt, *args):
     out, source, weights, view_img, save_txt, imgsz, save_img, sort_max_age, sort_min_hits, sort_iou_thresh, perspective_transformation = \
         opt.output, opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, opt.save_img, opt.sort_max_age, opt.sort_min_hits, opt.sort_iou_thresh, opt.perspective_transformation
@@ -274,31 +245,12 @@ def detect(opt, *args):
 
     cur = connect(tableName)
 
-    # print("sleeping for 10 seconds before starting")
-    # print("ensure settings are correct... ")
-    # time.sleep(10)
+    #could do perspective transformation stuff here
+    # if perspective_transformation:
 
-    #get points here
-
-    #start video capture & get bounding points  
-    cap = cv2.VideoCapture(0)
-    cap.set(3, 640)
-    cap.set(4, 480)
-    cap.set(5, 30)
-    ret, frame = cap.read()
-    name = "collect"
-    cv2.imshow(name,frame)
-    cv2.setMouseCallback(name, mousePoints)
-
-    while len(savedMousePoints) != 4:
-        ret, frame = cap.read()
-        drawPoints(savedMousePoints, frame)
-        cv2.imshow(name,frame)
-        if cv2.waitKey(24) == 27:
-                break
-    cv2.destroyAllWindows()
-          
-
+    print("sleeping for 10 seconds before starting")
+    print("ensure settings are correct... ")
+    time.sleep(10)
 
     ######
         #PROCESSING EACH FRAME HERE
@@ -382,10 +334,7 @@ def detect(opt, *args):
             print(f'{s} Done. ({t2-t1})')    
             # Stream image results(opencv)
             if view_img:
-                drawPoints(savedMousePoints, im0)
-                connectPoints(savedMousePoints, im0)
                 cv2.imshow(p,im0)
-                
             if view_img or save_img:
                 if cv2.waitKey(1)==ord('q'): #q to quit
                     raise StopIteration
@@ -431,7 +380,7 @@ if __name__ == '__main__':
 
     #parser.add_argument('--source', type=str, default='C:\\Users\\matt2\\Desktop\\Fish videos - final cuts\\1 yellow zebra fish\\1-front.avi', help='source')
     parser.add_argument('--source', type=str,
-                        default="0", help='source')
+                        default="1", help='source')
 
     parser.add_argument('--output', type=str, default='inference/processed-videos/'+str(datetime.today().replace(microsecond=0)).replace(":","_").replace(" ","_"),
                         help='output folder')  # output folder
@@ -439,8 +388,6 @@ if __name__ == '__main__':
     print("STARTING SCRIPT AT:",str(datetime.today().replace(microsecond=0)).replace(":","_").replace(" ","_"))
     parser.add_argument('--img-size', type=int, default=640,
                         help='inference size (pixels)')
-    parser.add_argument('--perspective', default = 'front',
-                        help='camera view - front or side')
     parser.add_argument('--conf-thres', type=float,
                         default=0.3, help='object confidence threshold')
     parser.add_argument('--iou-thres', type=float,
@@ -465,7 +412,7 @@ if __name__ == '__main__':
     parser.add_argument('--perspective-transformation', default="True")
 
     #SORT params
-    parser.add_argument('--sort-max-age', type=int, default=60,
+    parser.add_argument('--sort-max-age', type=int, default=10,
                         help='keep track of object even if object is occluded or not detected in n frames')
     parser.add_argument('--sort-min-hits', type=int, default=2,
                         help='start tracking only after n number of objects detected')
