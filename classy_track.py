@@ -47,6 +47,8 @@ Params to triple check for corectness:
 
 # python interpreter searchs these subdirectories for modules
 import sys
+
+from cv2 import getPerspectiveTransform
 sys.path.insert(0, './yolov5')
 sys.path.insert(0, './sort')
 
@@ -60,6 +62,7 @@ import cv2
 import torch
 import torch.backends.cudnn as cudnn
 from datetime import datetime
+import numpy as np
 
 #yolov5
 from yolov5.utils.datasets import LoadImages, LoadStreams
@@ -100,7 +103,9 @@ def connect(tableName):
             bbox_x2 decimal	NOT NULL,
             bbox_y2 decimal	NOT NULL,
             category CHARACTER VARYING(50) NOT NULL, 
-            identityNum INTEGER NOT NULL
+            identityNum INTEGER NOT NULL,
+            convertedX decimal NOT NULL,
+            convertedY decimal NOT NULL
         )""".format(str(tableName))
 
         cur.execute(createTable)
@@ -118,9 +123,11 @@ def insertRecordDB(cur, tableName, data):
             bbox_x2,
             bbox_y2,
             category,
-            identityNum
+            identityNum,
+            scaledX,
+            scaledY
     ) VALUES ({},{},{},{},{},{},{})
-    """.format(str(tableName), data[0], data[1], data[2], data[3], data[4], data[5], data[6] )
+    """.format(str(tableName), data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8] )
 
     print(statement)
 
@@ -368,10 +375,26 @@ def detect(opt, *args):
                     s_overdot = tracked_dets[7]
                     identity = tracked_dets[8]
                     
-                    with open(txt_path, 'a') as f:
-                        f.write(f'{frame_idx},{bbox_x1},{bbox_y1},{bbox_x2},{bbox_y2},{category},{u_overdot},{v_overdot},{s_overdot},{identity}\n')
+                    normalPoints = [[0,0],[640,0],[640,480],[0,480]]
+                    # savedMousePoints 
+                    #center point of fish detection
+                    p = [(bbox_x1+bbox_x2)/2, (bbox_y1+bbox_y2)/2]
                     
-                    insertRecordDB(cur,tableName, [frame_idx, bbox_x1,bbox_y1,bbox_x2,bbox_y2,category,identity])
+                    #calculate the transformation
+                    # matrix=cv2.getPerspectiveTransform(np.array(normalPoints),np.array(savedMousePoints)) #move this out of loop later
+                    convertedNormalPoints = np.array([[normalPoints[0]],[normalPoints[1]],[normalPoints[2]],[normalPoints[3]]],np.float32)
+                    convertedSavedMousePoints = np.array([[savedMousePoints[0]],[savedMousePoints[1]],[savedMousePoints[2]],[savedMousePoints[3]]],np.float32)
+
+                    matrix = getPerspectiveTransform(convertedNormalPoints,convertedSavedMousePoints)
+
+                    px = (matrix[0][0]*p[0] + matrix[0][1]*p[1] + matrix[0][2]) / ((matrix[2][0]*p[0] + matrix[2][1]*p[1] + matrix[2][2]))
+                    py = (matrix[1][0]*p[0] + matrix[1][1]*p[1] + matrix[1][2]) / ((matrix[2][0]*p[0] + matrix[2][1]*p[1] + matrix[2][2]))
+                    
+
+                    with open(txt_path, 'a') as f:
+                        f.write(f'{frame_idx},{bbox_x1},{bbox_y1},{bbox_x2},{bbox_y2},{category},{u_overdot},{v_overdot},{s_overdot},{identity},{px},{py}')
+                    
+                    insertRecordDB(cur, tableName, [frame_idx, bbox_x1,bbox_y1,bbox_x2,bbox_y2,category,identity, px, py])
 
             print(f'{s} Done. ({t2-t1})')    
             # Stream image results(opencv)
