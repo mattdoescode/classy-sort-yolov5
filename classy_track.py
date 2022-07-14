@@ -104,8 +104,8 @@ def connect(tableName):
             bbox_y2 decimal	NOT NULL,
             category CHARACTER VARYING(50) NOT NULL, 
             identityNum INTEGER NOT NULL,
-            convertedX decimal NOT NULL,
-            convertedY decimal NOT NULL
+            scaledX decimal NOT NULL,
+            scaledY decimal NOT NULL
         )""".format(str(tableName))
 
         cur.execute(createTable)
@@ -126,7 +126,7 @@ def insertRecordDB(cur, tableName, data):
             identityNum,
             scaledX,
             scaledY
-    ) VALUES ({},{},{},{},{},{},{})
+    ) VALUES ({},{},{},{},{},{},{},{},{})
     """.format(str(tableName), data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8] )
 
     print(statement)
@@ -385,12 +385,11 @@ def detect(opt, *args):
                     convertedNormalPoints = np.array([[normalPoints[0]],[normalPoints[1]],[normalPoints[2]],[normalPoints[3]]],np.float32)
                     convertedSavedMousePoints = np.array([[savedMousePoints[0]],[savedMousePoints[1]],[savedMousePoints[2]],[savedMousePoints[3]]],np.float32)
 
-                    matrix = getPerspectiveTransform(convertedNormalPoints,convertedSavedMousePoints)
+                    matrix = getPerspectiveTransform(convertedNormalPoints,convertedSavedMousePoints)#move this outside of loop
 
                     px = (matrix[0][0]*p[0] + matrix[0][1]*p[1] + matrix[0][2]) / ((matrix[2][0]*p[0] + matrix[2][1]*p[1] + matrix[2][2]))
                     py = (matrix[1][0]*p[0] + matrix[1][1]*p[1] + matrix[1][2]) / ((matrix[2][0]*p[0] + matrix[2][1]*p[1] + matrix[2][2]))
                     
-
                     with open(txt_path, 'a') as f:
                         f.write(f'{frame_idx},{bbox_x1},{bbox_y1},{bbox_x2},{bbox_y2},{category},{u_overdot},{v_overdot},{s_overdot},{identity},{px},{py}')
                     
@@ -399,9 +398,10 @@ def detect(opt, *args):
             print(f'{s} Done. ({t2-t1})')    
             # Stream image results(opencv)
             if view_img:
-                # drawPoints(savedMousePoints, im0)
-                # connectPoints(savedMousePoints, im0)
-                cv2.imshow(p,im0)
+                print("ERROR?")
+                drawPoints(savedMousePoints, im0)
+                connectPoints(savedMousePoints, im0)
+                cv2.imshow('0',im0) #default value is p, im0 #p stopped working
             if view_img or save_img:
                 if cv2.waitKey(1)==ord('q'): #q to quit
                     raise StopIteration
