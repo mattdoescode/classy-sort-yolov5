@@ -263,7 +263,7 @@ def detect(opt, *args):
         view_img = True
         cudnn.benchmark = True  # set True to speed up constant image size inference
         dataset = LoadStreams(source, img_size=imgsz)
-        perspectiveName = "front" if '0' == source else "side"
+        perspectiveName = "front" #if '0' == source else "side"
         tableName = os.path.split(out)[1] + "-" + perspectiveName
         print("table name is", tableName)
         print("source is ", source)
@@ -398,7 +398,6 @@ def detect(opt, *args):
             print(f'{s} Done. ({t2-t1})')    
             # Stream image results(opencv)
             if view_img:
-                print("ERROR?")
                 drawPoints(savedMousePoints, im0)
                 connectPoints(savedMousePoints, im0)
                 cv2.imshow('0',im0) #default value is p, im0 #p stopped working
@@ -440,10 +439,10 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str,
-                        default='C:\\Users\\matt2\\Desktop\\classy-sort-yolov5-MINE\\runs\\train\\exp15\\weights\\last.pt', help='model.pt path')
+                        default='C:\\Users\\matt2\\Desktop\\classy-sort-yolov5-MINE\\white-sub\\exp10\\weights\\best.pt', help='model.pt path')
     # file/folder, 0 for webcam
     # file_location = "C:\Users\matt2\Desktop\working-camera\RAW-FOOTAGE\2021-12-07 16-07-34\camera-one-at-2021-12-07 16-07-34.avi"
-    # file_location = file_location.replace('\\','/')
+    # file_location = file_location.replace('\\','/')q
 
     #parser.add_argument('--source', type=str, default='C:\\Users\\matt2\\Desktop\\Fish videos - final cuts\\1 yellow zebra fish\\1-front.avi', help='source')
     parser.add_argument('--source', type=str,
@@ -456,7 +455,7 @@ if __name__ == '__main__':
     parser.add_argument('--img-size', type=int, default=640,
                         help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float,
-                        default=0.3, help='object confidence threshold')
+                        default=0.2, help='object confidence threshold')
     parser.add_argument('--iou-thres', type=float,
                         default=0.4, help='IOU threshold for NMS')
     parser.add_argument('--fourcc', type=str, default='mp4v',
@@ -479,7 +478,7 @@ if __name__ == '__main__':
     parser.add_argument('--perspective-transformation', default="True")
 
     #SORT params
-    parser.add_argument('--sort-max-age', type=int, default=10,
+    parser.add_argument('--sort-max-age', type=int, default=60,
                         help='keep track of object even if object is occluded or not detected in n frames')
     parser.add_argument('--sort-min-hits', type=int, default=2,
                         help='start tracking only after n number of objects detected')
