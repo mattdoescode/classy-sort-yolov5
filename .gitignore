@@ -147,3 +147,7 @@ fish-project-interpreter
 runs
 *.ini
 *.txt
+
+data/*
+white-sub/*
+yolov5/YOLO-training-data/*
