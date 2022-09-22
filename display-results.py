@@ -7,9 +7,9 @@ on this. Subsequent pairings (tracking) is done via the ID's given from YOLO out
 4. drives virtual reality screen 
 """
 
-errorAcceptance = 75
+errorAcceptance = 1000
 activelyTracked = []
-sortAlgoMaxFrameAge = 10
+sortAlgoMaxFrameAge = 60
 
 #camera 0 - front facing camera - captures x,y - globally -> x,z
 #camera 1 - top facing camera - captures x,y - globally -> x,y
@@ -38,21 +38,23 @@ class detectedObject():
         self.Y2 = None
         self.frame = None
         self.sortID = None
+        self.correctedX = None
+        self.correctedY = None
 
 class finalObject():
     def __init__(self):
         self.uniqueID = None
-        self.topID = None
+        self.sideID = None
         self.frontID = None
         self.frontFrame = None
-        self.topFrame = None
+        self.sideFrame = None
         self.X1 = None
         self.X2 = None
         self.Y1 = None
         self.Y2 = None
         self.Z1 = None
         self.Z2 = None
-        self.topSortID = None
+        self.sideSortID = None
         self.frontSortID = None
         self.age = 0
 
@@ -63,12 +65,12 @@ def mergeCameraDetections(view1,view2):
     views = [view1,view2]
     x1 = x2 = 0
     for view in views:
-        if view.perspective == 'top':
+        if view.perspective == 'side':
             mergedObj.Y1 = view.Y1
             mergedObj.Y2 = view.Y2
-            mergedObj.topFrame = view.frame
-            mergedObj.topID = view.uniqueID
-            mergedObj.topSortID = view.sortID
+            mergedObj.sideFrame = view.frame
+            mergedObj.sideID = view.uniqueID
+            mergedObj.sideSortID = view.sortID
         elif view.perspective == 'front':
             mergedObj.Z1 = view.Y1
             mergedObj.Z2 = view.Y2
@@ -80,8 +82,10 @@ def mergeCameraDetections(view1,view2):
 
     mergedObj.X1 = x1/2
     mergedObj.X2 = x2/2
-    mergedObj.uniqueID = views[0].uniqueID + " " + views[1].uniqueID
 
+    mergedObj.uniqueID = "Side: " + str(mergedObj.sideSortID) + " Front: ", str(mergedObj.frontSortID)
+
+    # mergedObj.uniqueID = str(views[0].sortID) + " " + str(views[1].sortID)
 
     return mergedObj
 
@@ -90,9 +94,9 @@ def createTrackedObjectFromDBData(tableName, dbRecord):
      #each DB record is 
         #recordID, frame#, x1, y1, x2, y2, detected object, sort item ID
     currentTemp = detectedObject()
-    if "top" in tableName or "TOP" in tableName or "Top" in tableName:
-        currentTemp.uniqueID = str(dbRecord[0]) +"-top"
-        currentTemp.perspective = 'top'
+    if "side" in tableName or "SIDE" in tableName or "Side" in tableName:
+        currentTemp.uniqueID = str(dbRecord[0]) +"-side"
+        currentTemp.perspective = 'side'
     elif "front" in tableName or "FRONT" in tableName or "Front" in tableName:
         currentTemp.uniqueID = str(dbRecord[0]) +"-front"
         currentTemp.perspective = 'front'
@@ -108,7 +112,7 @@ def createTrackedObjectFromDBData(tableName, dbRecord):
     return currentTemp
 
 def animate(i, para):
-    screen.fill((0,0,0))
+    screen.fill((255,255,255))
     pygame.display.flip()
     #each detection saved as on object
     tempDetected = []
@@ -242,7 +246,7 @@ def animate(i, para):
                     if(possiblePair[3] == True):
                         #combine results
                         mergedRecordsToCompareToActivelyTracked.append(mergeCameraDetections(possiblePair[0],possiblePair[1]))
-                mergedRecordsToCompareToActivelyTracked = sorted(mergedRecordsToCompareToActivelyTracked, key=lambda x: x.topSortID)
+                mergedRecordsToCompareToActivelyTracked = sorted(mergedRecordsToCompareToActivelyTracked, key=lambda x: x.sideSortID)
                 #compare new records with previously existing records
                 #compare existing ID's to 
     
@@ -255,10 +259,10 @@ def animate(i, para):
                 #pair records based on their SORTID 
                 if 'activelyTracked' in vars():
                     list1Pointer = list2Pointer = 0
-                    #temp records are sorted by topSortID
+                    #temp records are sorted by sideSortID
                     #adding directly to perm storage should always result in a sorted record? (double check this)
                     while len(mergedRecordsToCompareToActivelyTracked) != list1Pointer and len(activelyTracked) != list2Pointer:
-                        if(mergedRecordsToCompareToActivelyTracked[list1Pointer].topSortID == activelyTracked[list2Pointer].topSortID and mergedRecordsToCompareToActivelyTracked[list1Pointer].frontSortID == activelyTracked[list2Pointer].frontSortID):
+                        if(mergedRecordsToCompareToActivelyTracked[list1Pointer].sideSortID == activelyTracked[list2Pointer].sideSortID and mergedRecordsToCompareToActivelyTracked[list1Pointer].frontSortID == activelyTracked[list2Pointer].frontSortID):
                             activelyTracked[list2Pointer] = mergedRecordsToCompareToActivelyTracked[list1Pointer]
                             # print("match")
                             list2Pointer = list2Pointer + 1
@@ -266,7 +270,7 @@ def animate(i, para):
                             continue
                         #check which pointer has highest value
                         #increment the other
-                        if mergedRecordsToCompareToActivelyTracked[list1Pointer].topSortID < activelyTracked[list2Pointer].topSortID:
+                        if mergedRecordsToCompareToActivelyTracked[list1Pointer].sideSortID < activelyTracked[list2Pointer].sideSortID:
                             list1Pointer = list1Pointer + 1
                         else:
                             list2Pointer = list2Pointer + 1
@@ -276,7 +280,7 @@ def animate(i, para):
                     while len(mergedRecordsToCompareToActivelyTracked) >= list1Pointer:
                         view1Match = view2Match = False
                         for i in range(len(activelyTracked)):
-                            if(mergedRecordsToCompareToActivelyTracked[list1Pointer].topSortID == activelyTracked[i].topSortID):
+                            if(mergedRecordsToCompareToActivelyTracked[list1Pointer].sideSortID == activelyTracked[i].sideSortID):
                                 view1Match = True
                                 partMatchPointerNum = i
                             elif(mergedRecordsToCompareToActivelyTracked[list1Pointer].frontSortID == activelyTracked[i].frontSortID):
@@ -326,7 +330,7 @@ def animate(i, para):
 
     #PLOT FISH
     #ax.scatter(x pos, y pos, z pos, s = size of plot point, label for legend)
-    if activelyTracked:
+    if 'activelyTracked' in vars():
         # print(len(activelyTracked), "records")
         for permTracked in activelyTracked:
             #average this out (2 points per cord)
@@ -380,7 +384,7 @@ if __name__ == '__main__':
             query = \
                 """
                 SELECT table_name FROM information_schema.tables
-                            WHERE table_schema='public' AND table_name like '%front' or table_name like '%top'
+                            WHERE table_schema='public' AND table_name like '%front' or table_name like '%side'
                             ORDER BY table_name DESC LIMIT 1
                 """
             print("tracking from 1 camera")
@@ -393,7 +397,7 @@ if __name__ == '__main__':
                             ORDER BY table_name DESC LIMIT 1) 
                             UNION
                 (SELECT table_name FROM information_schema.tables
-                            WHERE table_schema='public' AND table_name like '%top'
+                            WHERE table_schema='public' AND table_name like '%side'
                             ORDER BY table_name DESC LIMIT 1)
             """
         cur.execute(query)
