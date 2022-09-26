@@ -7,6 +7,10 @@ on this. Subsequent pairings (tracking) is done via the ID's given from YOLO out
 4. drives virtual reality screen 
 """
 
+"""
+    32 px = 1 inch
+"""
+
 errorAcceptance = 1000
 activelyTracked = []
 sortAlgoMaxFrameAge = 60
@@ -20,6 +24,9 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
+
+from mpl_toolkits.mplot3d import Axes3D
+
 
 #turn off warnings from myplotlib
 import logging
@@ -340,9 +347,11 @@ def animate(i, para):
     # ax.invert_zaxis()
     # ax.invert_yaxis()
     # ax.invert_zaxis()
-    ax.axes.set_xlim3d(left=0, right=1000) 
-    ax.axes.set_ylim3d(bottom=0, top=1000) 
-    ax.axes.set_zlim3d(bottom=0, top=1000)
+    
+    ax.axes.set_xlim3d(left=0, right=640) 
+    ax.axes.set_ylim3d(bottom=0, top=320) 
+    ax.axes.set_zlim3d(bottom=0, top=384)
+    ax.set_box_aspect(20,10,12)
     ax.set_xlabel('X axis')
     ax.set_ylabel('Y axis')
     ax.set_zlabel('Z axis')
@@ -417,9 +426,13 @@ if __name__ == '__main__':
     print("table name(s) are", tableNames)
 
     # setup init graph 
-    fig = plt.figure(figsize=(10,10))
+    fig = plt.figure(figsize=(8,8))
+    
     ax = fig.add_subplot(111, projection='3d')
     ax.view_init(azim = -104, elev = 28)
+    #scale tank 
+                                                                #x, y, z
+    ax.get_proj = lambda: np.dot(Axes3D.get_proj(ax), np.diag([1, .5, .6, .8]))
 
     import pygame
     pygame.init()
