@@ -11,39 +11,22 @@ Params to triple check for corectness:
     #Source -> don't process the wrong video feed
 """
 
-"""
-    ClassySORT
-    
-    YOLO v5(image segmentation) + vanilla SORT(multi-object tracker) implementation 
-    that is aware of the tracked object category.
-    
-    This is for people who want a real-time multiple object tracker (MOT) 
-    that can track any kind of object with no additional training.
-    
-    If you only need to track people, then I recommend YOLOv5 + DeepSORT implementations.
-    DeepSORT adds a separately trained neural network on top of SORT, 
-    which increases accuracy for human detections but decreases performance slightly.
-    
-    
-    Copyright (C) 2020-2021 Jason Sohn tensorturtle@gmail.com
-    
-    === start GNU License ===
-    
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-    
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-    
-    === end GNU License ===
-"""
 
+
+"""
+Code base started from https://github.com/tensorturtle/classy-sort-yolov5 this author 
+implemented sort as outlined here https://github.com/abewley/sort into YoloV5. 
+
+I have heavily modified this codebase. I fixed several bugs and added the following:
+    Changed code to report detection location
+    PostgreSQL recording
+    Multiple labels 
+    Multiple Video recording / saving
+    Frame saving
+    .txt file saving
+    Video output
+    PerspectiveTransform code
+"""
 
 # python interpreter searchs these subdirectories for modules
 import sys
@@ -296,7 +279,7 @@ def detect(opt, *args):
     save_path = str(Path(out))
     txt_path = str(Path(out))+'/results.txt'
     print("OUTPUT FILES WILL BE SAVED TO: ", os.path.abspath(save_path))
-
+    time.sleep(2000)
 
     cur = connect(tableName)
 
@@ -375,18 +358,22 @@ def detect(opt, *args):
                     s_overdot = tracked_dets[7]
                     identity = tracked_dets[8]
                     
-                    normalPoints = [[0,0],[640,0],[640,480],[0,480]]
-                    # savedMousePoints 
-                    #center point of fish detection
-                    p = [(bbox_x1+bbox_x2)/2, (bbox_y1+bbox_y2)/2]
-                    
+                    #bounds of transformation
+                #top view
+                    #normalPoints = [[0,0],[640,0],[640,320],[0,320]]
+                #front view
+                    normalPoints = [[0,0],[640,0],[640,384],[0,384]]
+
                     #calculate the transformation
                     # matrix=cv2.getPerspectiveTransform(np.array(normalPoints),np.array(savedMousePoints)) #move this out of loop later
                     convertedNormalPoints = np.array([[normalPoints[0]],[normalPoints[1]],[normalPoints[2]],[normalPoints[3]]],np.float32)
                     convertedSavedMousePoints = np.array([[savedMousePoints[0]],[savedMousePoints[1]],[savedMousePoints[2]],[savedMousePoints[3]]],np.float32)
 
                     matrix = getPerspectiveTransform(convertedNormalPoints,convertedSavedMousePoints)#move this outside of loop
-
+                    
+                    #Existing center point of detected object
+                    p = [(bbox_x1+bbox_x2)/2, (bbox_y1+bbox_y2)/2]
+                    #convert the point
                     px = (matrix[0][0]*p[0] + matrix[0][1]*p[1] + matrix[0][2]) / ((matrix[2][0]*p[0] + matrix[2][1]*p[1] + matrix[2][2]))
                     py = (matrix[1][0]*p[0] + matrix[1][1]*p[1] + matrix[1][2]) / ((matrix[2][0]*p[0] + matrix[2][1]*p[1] + matrix[2][2]))
                     
