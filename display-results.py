@@ -351,7 +351,6 @@ def animate(i, para):
     ax.axes.set_xlim3d(left=0, right=640) 
     ax.axes.set_ylim3d(bottom=0, top=320) 
     ax.axes.set_zlim3d(bottom=0, top=384)
-    ax.set_box_aspect(20,10,12)
     ax.set_xlabel('X axis')
     ax.set_ylabel('Y axis')
     ax.set_zlabel('Z axis')
