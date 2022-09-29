@@ -279,7 +279,6 @@ def detect(opt, *args):
     save_path = str(Path(out))
     txt_path = str(Path(out))+'/results.txt'
     print("OUTPUT FILES WILL BE SAVED TO: ", os.path.abspath(save_path))
-    time.sleep(2000)
 
     cur = connect(tableName)
 
@@ -369,7 +368,7 @@ def detect(opt, *args):
                     convertedNormalPoints = np.array([[normalPoints[0]],[normalPoints[1]],[normalPoints[2]],[normalPoints[3]]],np.float32)
                     convertedSavedMousePoints = np.array([[savedMousePoints[0]],[savedMousePoints[1]],[savedMousePoints[2]],[savedMousePoints[3]]],np.float32)
 
-                    matrix = getPerspectiveTransform(convertedNormalPoints,convertedSavedMousePoints)#move this outside of loop
+                    matrix = getPerspectiveTransform(convertedSavedMousePoints,convertedNormalPoints)#move this outside of loop
                     
                     #Existing center point of detected object
                     p = [(bbox_x1+bbox_x2)/2, (bbox_y1+bbox_y2)/2]
@@ -427,7 +426,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str,
                         default='C:\\Users\\matt2\\Desktop\\classy-sort-yolov5-MINE\\white-sub\\exp10\\weights\\best.pt', help='model.pt path')
-    # file/folder, 0 for webcam
+    # file/folder, 0 for webcama
     # file_location = "C:\Users\matt2\Desktop\working-camera\RAW-FOOTAGE\2021-12-07 16-07-34\camera-one-at-2021-12-07 16-07-34.avi"
     # file_location = file_location.replace('\\','/')q
 
