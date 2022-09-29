@@ -18,6 +18,8 @@ sortAlgoMaxFrameAge = 60
 #camera 0 - front facing camera - captures x,y - globally -> x,z
 #camera 1 - top facing camera - captures x,y - globally -> x,y
 
+import time
+
 import argparse
 import psycopg2
 import sys
@@ -63,6 +65,10 @@ class finalObject():
         self.Z2 = None
         self.sideSortID = None
         self.frontSortID = None
+        # self.correctedX = None
+        self.correctedY = None
+        self.correctedZ = None
+        self.correctedAverageX = None
         self.age = 0
 
 #take 2 matched perspectives for a fish 2 detectedObject
@@ -78,17 +84,25 @@ def mergeCameraDetections(view1,view2):
             mergedObj.sideFrame = view.frame
             mergedObj.sideID = view.uniqueID
             mergedObj.sideSortID = view.sortID
+            mergedObj.correctedY = view.correctedY
         elif view.perspective == 'front':
             mergedObj.Z1 = view.Y1
             mergedObj.Z2 = view.Y2
             mergedObj.frontFrame = view.frame
             mergedObj.frontID = view.uniqueID
             mergedObj.frontSortID = view.sortID
-        x1 = x1 + view.X1
-        x2 = x2 + view.X2
+            #caputed Y is global Z
+            mergedObj.correctedZ = view.correctedY
 
-    mergedObj.X1 = x1/2
-    mergedObj.X2 = x2/2
+    mergedObj.correctedAverageX = (view1.correctedX + view2.correctedX)/2
+
+    print(mergedObj.correctedY, mergedObj.correctedZ, mergedObj.correctedAverageX)
+
+        # x1 = x1 + view.X1
+        # x2 = x2 + view.X2
+
+    # mergedObj.X1 = x1/2
+    # mergedObj.X2 = x2/2
 
     mergedObj.uniqueID = "Side: " + str(mergedObj.sideSortID) + " Front: ", str(mergedObj.frontSortID)
 
@@ -116,6 +130,8 @@ def createTrackedObjectFromDBData(tableName, dbRecord):
     currentTemp.X2 = dbRecord[4]
     currentTemp.Y2 = dbRecord[5]
     currentTemp.sortID = dbRecord[7]
+    currentTemp.correctedX = dbRecord[8]
+    currentTemp.correctedY = dbRecord[9] 
     return currentTemp
 
 def animate(i, para):
@@ -161,10 +177,10 @@ def animate(i, para):
             
             #find pairings
             #match on the similar x axis
-            for firstItem in sorted(tempDetected, key=lambda detectedObject: ((detectedObject.X1 + detectedObject.X2)/2)):
-                for secondItem in sorted(secondTempDetected, key=lambda detectedObject: ((detectedObject.X1 + detectedObject.X2)/2)):
+            for firstItem in sorted(tempDetected, key=lambda detectedObject: detectedObject.correctedX):
+                for secondItem in sorted(secondTempDetected, key=lambda detectedObject: detectedObject.correctedX):
                     distance = abs(
-                                    (firstItem.X1 + firstItem.X2)/2 - (secondItem.X1 + secondItem.X2)/2
+                                    firstItem.correctedX - secondItem.correctedX
                                   )
                     if distance > errorAcceptance:
                         continue
@@ -341,7 +357,7 @@ def animate(i, para):
         # print(len(activelyTracked), "records")
         for permTracked in activelyTracked:
             #average this out (2 points per cord)
-            ax.scatter(float(permTracked.X1),float(permTracked.Y1),float(permTracked.Z1), s = 400, label = permTracked.uniqueID)
+            ax.scatter(float(permTracked.correctedAverageX), float(permTracked.correctedY), float(permTracked.correctedZ), s = 400, label = permTracked.uniqueID)
 
     #invert axis
     # ax.invert_zaxis()
