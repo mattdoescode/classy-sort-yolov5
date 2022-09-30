@@ -357,12 +357,8 @@ def animate(i, para):
         # print(len(activelyTracked), "records")
         for permTracked in activelyTracked:
             #average this out (2 points per cord)
-            ax.scatter(float(permTracked.correctedAverageX), float(permTracked.correctedY), float(permTracked.correctedZ), s = 400, label = permTracked.uniqueID)
+            ax.scatter(float(permTracked.correctedAverageX), 320 - float(permTracked.correctedY), 384 - float(permTracked.correctedZ), s = 400, label = permTracked.uniqueID)
 
-    #invert axis
-    # ax.invert_zaxis()
-    # ax.invert_yaxis()
-    # ax.invert_zaxis()
     
     ax.axes.set_xlim3d(left=0, right=640) 
     ax.axes.set_ylim3d(bottom=0, top=320) 
